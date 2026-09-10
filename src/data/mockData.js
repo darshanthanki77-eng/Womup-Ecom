@@ -138,79 +138,94 @@ export const tokenomicsData = {
   ],
   utilities: [
     {
-      title: "Investment",
+      title: "Platform Access",
+      icon: "Key",
+      description: "Defined platform access and tiered privileges across decentralized ecosystem smart contracts."
+    },
+    {
+      title: "Ecosystem Incentives",
       icon: "Coins",
-      description: "Gain preferred access to tiered investment contracts and amplified yield pools."
+      description: "Participation rewards, yield opportunities, and tiered incentives across platform activities."
     },
     {
-      title: "Staking",
-      icon: "ShieldCheck",
-      description: "Stake RGL to secure the ecosystem protocol and earn competitive staking yield."
+      title: "Partner Benefits",
+      icon: "Handshake",
+      description: "Exclusive merchant advantages, commercial partner integrations, and ecosystem perks."
     },
     {
-      title: "Governance",
-      icon: "Users",
-      description: "Cast DAO votes on protocol parameter modifications, package terms, and treasury grants."
-    },
-    {
-      title: "Ecosystem",
+      title: "Digital Services",
       icon: "Globe",
-      description: "Universal fee discount and utility settlement token across all affiliated DApps."
+      description: "Seamless participation, payment settlement, and interaction across connected Web3 services."
+    },
+    {
+      title: "Governance Features",
+      icon: "Users",
+      description: "Community-driven consensus, proposal participation, and decentralized governance voting."
+    },
+    {
+      title: "Delivered Products",
+      icon: "Briefcase",
+      description: "Practical utility directly connected to products and commercial tools actually delivered by the project."
     }
   ]
 };
 
 export const roadmapData = [
   {
-    phase: "PHASE 01",
-    quarter: "2026 Q4",
+    stage: "I — Foundation",
+    phase: "STAGE I",
+    quarter: "Stage 1",
     title: "Foundation",
     status: "Completed",
-    description: "Core architecture design, legal alignment, and smart contract protocol engineering.",
+    description: "Legal structure, tokenomics, smart-contract review, website, documentation, security and compliance framework.",
     milestones: [
-      "Ecosystem architecture & development-ready SRS",
-      "BEP-20 Smart Contract deployment & multi-sig audit",
-      "Core Web3 design system & UI/UX prototyping",
-      "Private seed investment round closure"
+      "Legal structure & compliance framework",
+      "Tokenomics architecture design",
+      "Smart-contract review & audit readiness",
+      "Official website & documentation release",
+      "Security & compliance framework"
     ]
   },
   {
-    phase: "PHASE 02",
-    quarter: "2026 Q1",
-    title: "Token Launch",
+    stage: "II — Presale",
+    phase: "STAGE II",
+    quarter: "Stage 2",
+    title: "Presale",
     status: "In Progress",
-    description: "Public token launch, decentralized exchange listings, and marketing rollout.",
+    description: "Launch presale phases, publish official wallets, communicate terms and establish reporting process.",
     milestones: [
-      "Public Token Launch on PancakeSwap & BNB DEXes",
-      "Launch of 8-month Investment & ROI Engine",
-      "PancakeSwap liquidity lock & proof-of-reserves",
-      "Global influencer & affiliate marketing sprint"
+      "Launch presale phases",
+      "Publish official wallets",
+      "Communicate terms & allocation guidelines",
+      "Establish reporting process"
     ]
   },
   {
-    phase: "PHASE 03",
-    quarter: "2027 Q2",
-    title: "Ecosystem Expansion",
+    stage: "III — Business Activation",
+    phase: "STAGE III",
+    quarter: "Stage 3",
+    title: "Business Activation",
     status: "Upcoming",
-    description: "Tier 1 CEX listings, institutional staking integration, and mobile app launch.",
+    description: "Deploy treasury according to policy; initiate and scale permitted general trading and import-export activities.",
     milestones: [
-      "Centralized exchange listings (Gate.io, MEXC, KuCoin)",
-      "Regal iOS & Android mobile Web3 wallet release",
-      "Advanced ROI automation & dynamic staking pools",
-      "Institutional treasury partnership integration"
+      "Deploy treasury according to policy",
+      "Initiate permitted general trading",
+      "Scale import-export activities",
+      "Real-world commercial business execution"
     ]
   },
   {
-    phase: "PHASE 04",
-    quarter: "2027 Q4",
-    title: "Global Community",
+    stage: "IV — DEX Launch",
+    phase: "STAGE IV",
+    quarter: "Stage 4",
+    title: "DEX Launch",
     status: "Upcoming",
-    description: "Cross-chain bridge, DAO governance transition, and enterprise adoption.",
+    description: "Finalize liquidity, complete launch checks, establish liquidity lock and pursue PancakeSwap launch.",
     milestones: [
-      "Cross-chain bridge expansion (Ethereum, Arbitrum, Solana)",
-      "Regal DAO decentralized governance activation",
-      "Real World Asset (RWA) tokenization pilot",
-      "Worldwide summits & institutional custody solutions"
+      "Finalize liquidity provisioning",
+      "Complete pre-launch security checks",
+      "Establish verifiable liquidity lock",
+      "Pursue PancakeSwap DEX launch"
     ]
   }
 ];
@@ -280,6 +295,11 @@ export const docsData = [
     category: "Overview",
     content: `### Executive Overview
 Regal (RGL) represents the next evolution in decentralized digital asset management. Engineered exclusively on the BNB Smart Chain (BEP-20), Regal combines transparent smart contract logic with high-yield financial packaging.
+
+### Vision & Mission
+- **Vision**: Establish a global ecosystem where digital assets and international commerce work together to create sustainable economic activity.
+- **Mission**: Build a scalable commercial operation, develop practical token utility, maintain transparent records and establish long-term value through real business execution.
+- **Core Principle**: The project is structured around a simple principle: commercial activity first, ecosystem expansion second, and transparency throughout.
 
 ### Core Architecture
 - **Protocol**: Decentralized asset management protocol
@@ -388,5 +408,30 @@ Referral bonuses are distributed immediately upon blockchain confirmation of the
     category: "Legal",
     content: `### Legal & Regulatory Notice
 Participation in blockchain-based digital asset protocols involves financial risk. Market fluctuations on BNB Smart Chain, network congestion, and smart contract protocol updates may impact valuations. Ensure compliance with your local jurisdiction prior to transacting.`
+  },
+  {
+    id: "roadmap",
+    slug: "roadmap",
+    title: "13. Roadmap",
+    category: "Overview",
+    content: `### 13 Roadmap Execution Stages
+
+| Stage | Key Milestones |
+| :--- | :--- |
+| **I — Foundation** | Legal structure, tokenomics, smart-contract review, website, documentation, security and compliance framework. |
+| **II — Presale** | Launch presale phases, publish official wallets, communicate terms and establish reporting process. |
+| **III — Business Activation** | Deploy treasury according to policy; initiate and scale permitted general trading and import-export activities. |
+| **IV — DEX Launch** | Finalize liquidity, complete launch checks, establish liquidity lock and pursue PancakeSwap launch. |`
+  },
+  {
+    id: "token-utility",
+    slug: "token-utility",
+    title: "14. Token Utility",
+    category: "Token",
+    content: `### 14 Token Utility
+As the ecosystem develops, the token may support defined platform access, ecosystem incentives, partner benefits, participation in digital services, governance features and other utilities connected to products actually delivered by the project.
+
+### Progressive Growth & Market Disclaimer
+Utility will be expanded progressively as the underlying ecosystem grows. Token utility should remain distinct from any promise of market appreciation.`
   }
 ];

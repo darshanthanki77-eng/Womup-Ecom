@@ -2,7 +2,7 @@ import { ArrowRight, ChevronRight, Coins, Shield, Sparkles, TrendingUp, Wallet }
 import React from "react";
 import { coinHero } from "../assets";
 
-export default function HeroSection({ onOpenInvestModal, onExploreEcosystem, tokenInfo }) {
+export default function HeroSection({ onOpenInvestModal, onExploreEcosystem, onOpenAuthModal, tokenInfo }) {
   return (
     <section
       id="home"
@@ -96,13 +96,22 @@ export default function HeroSection({ onOpenInvestModal, onExploreEcosystem, tok
             {/* CTAs */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center" }}>
               <button
-                onClick={onOpenInvestModal}
+                onClick={() => onOpenAuthModal ? onOpenAuthModal("signup") : onOpenInvestModal()}
                 className="btn btn-gold btn-lg"
+                style={{ display: "inline-flex", alignItems: "center", gap: "10px", boxShadow: "0 0 25px rgba(212, 175, 55, 0.35)" }}
+              >
+                <Sparkles size={18} />
+                Create Account & Join
+                <ArrowRight size={16} />
+              </button>
+
+              <button
+                onClick={onOpenInvestModal}
+                className="btn btn-outline-gold btn-lg"
                 style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}
               >
                 <Coins size={18} />
                 Explore Packages
-                <ArrowRight size={16} />
               </button>
 
               <button

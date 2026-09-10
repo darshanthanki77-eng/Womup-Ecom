@@ -11,20 +11,20 @@ export default function AboutSection({ onOpenInvestModal }) {
         <div className="section-header">
           <div className="section-badge">
             <Sparkles size={13} />
-            WHO WE ARE
+            03 • VISION & MISSION
           </div>
           <h2 className="section-title">
-            About <span className="gold-gradient-text">Regal</span>
+            Vision & <span className="gold-gradient-text">Mission</span>
           </h2>
-          <p className="section-subtitle" style={{ fontSize: "17px", color: "var(--gold-bright)", fontWeight: 600, marginBottom: "8px" }}>
-            Building a Stronger Financial Future
+          <p className="section-subtitle" style={{ fontSize: "16px", color: "var(--gold-bright)", fontWeight: 600, marginBottom: "8px" }}>
+            Commercial Activity First • Ecosystem Expansion Second • Transparency Throughout
           </p>
-          <p className="section-subtitle">
-            Regal is a BEP-20 token ecosystem designed to provide secure, transparent, people-centric investment opportunities through audited blockchain smart contracts.
+          <p className="section-subtitle" style={{ maxWidth: "760px", margin: "0 auto 12px" }}>
+            The project is structured around a simple principle: commercial activity first, ecosystem expansion second, and transparency throughout.
           </p>
         </div>
 
-        {/* 3 Core Pillars: Mission, Vision, Philosophy */}
+        {/* 3 Core Pillars: Vision, Mission, Core Principle */}
         <div
           style={{
             display: "grid",
@@ -33,27 +33,7 @@ export default function AboutSection({ onOpenInvestModal }) {
             marginBottom: "60px"
           }}
         >
-          <div className="regal-card" style={{ background: "#0D0D0D" }}>
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "10px",
-                background: "rgba(212, 175, 55, 0.12)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: "18px"
-              }}
-            >
-              <Target size={22} color="var(--gold-primary)" />
-            </div>
-            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Our Mission</h3>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.7" }}>
-              To create a secure and transparent ecosystem that empowers individuals and institutions globally to build sustained digital wealth through automated blockchain mechanisms.
-            </p>
-          </div>
-
+          {/* Vision Card */}
           <div className="regal-card" style={{ background: "#0D0D0D" }}>
             <div
               style={{
@@ -69,12 +49,41 @@ export default function AboutSection({ onOpenInvestModal }) {
             >
               <Eye size={22} color="var(--gold-primary)" />
             </div>
-            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Our Vision</h3>
+            <div style={{ fontSize: "11px", color: "var(--gold-primary)", letterSpacing: "1px", textTransform: "uppercase", fontWeight: 700, marginBottom: "6px" }}>
+              Pillar 01
+            </div>
+            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Vision</h3>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.7" }}>
-              To become a globally recognized Web3 digital asset benchmark—connecting investors, capital allocators, and decentralized opportunities across borders with zero friction.
+              Establish a global ecosystem where digital assets and international commerce work together to create sustainable economic activity.
             </p>
           </div>
 
+          {/* Mission Card */}
+          <div className="regal-card" style={{ background: "#0D0D0D" }}>
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "10px",
+                background: "rgba(212, 175, 55, 0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "18px"
+              }}
+            >
+              <Target size={22} color="var(--gold-primary)" />
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--gold-primary)", letterSpacing: "1px", textTransform: "uppercase", fontWeight: 700, marginBottom: "6px" }}>
+              Pillar 02
+            </div>
+            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Mission</h3>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.7" }}>
+              Build a scalable commercial operation, develop practical token utility, maintain transparent records and establish long-term value through real business execution.
+            </p>
+          </div>
+
+          {/* Core Principle Card */}
           <div className="regal-card" style={{ background: "#0D0D0D" }}>
             <div
               style={{
@@ -90,9 +99,12 @@ export default function AboutSection({ onOpenInvestModal }) {
             >
               <HeartHandshake size={22} color="var(--gold-primary)" />
             </div>
-            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Our Philosophy</h3>
+            <div style={{ fontSize: "11px", color: "var(--gold-primary)", letterSpacing: "1px", textTransform: "uppercase", fontWeight: 700, marginBottom: "6px" }}>
+              Pillar 03
+            </div>
+            <h3 style={{ fontSize: "20px", marginBottom: "12px", color: "#F5F5F5" }}>Core Principle</h3>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.7" }}>
-              Built upon uncompromised trust, radical blockchain transparency, institutional-grade security, and an alignment between platform growth and community prosperity.
+              The project is structured around a simple principle: commercial activity first, ecosystem expansion second, and transparency throughout.
             </p>
           </div>
         </div>

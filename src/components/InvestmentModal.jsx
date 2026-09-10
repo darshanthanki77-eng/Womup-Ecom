@@ -290,7 +290,7 @@ export default function InvestmentModal({
                 <div style={{ fontSize: "12px", color: "var(--gold-bright)", fontWeight: 600, marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Yield Schedule Preview
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", textAlign: "center" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 110px), 1fr))", gap: "10px", textAlign: "center" }}>
                   <div style={{ background: "#080808", padding: "10px", borderRadius: "8px", border: "1px solid #1E1E1E" }}>
                     <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>Day 1–60</div>
                     <div style={{ fontSize: "13px", fontWeight: 700, color: "#FFF", marginTop: "2px" }}>0.00%</div>

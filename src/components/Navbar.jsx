@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, Menu, Shield, Wallet, X } from "lucide-react";
+import { ChevronDown, ExternalLink, LayoutDashboard, LogIn, Menu, Shield, Sparkles, Wallet, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { coinHero } from "../assets";
 
@@ -7,13 +7,20 @@ export default function Navbar({
   setCurrentView,
   wallet,
   onOpenWalletModal,
-  onOpenInvestModal
+  onOpenInvestModal,
+  onOpenAuthModal
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("regal_user");
+      if (saved) setHasAccount(true);
+    } catch (e) {}
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -242,6 +249,39 @@ export default function Navbar({
             </button>
           )}
 
+          {/* Sign In / Sign Up / Dashboard Access Buttons (Desktop) */}
+          <div className="desktop-auth-btns" style={{ display: "none", alignItems: "center", gap: "10px" }}>
+            <button
+              onClick={() => {
+                if (hasAccount) {
+                  setCurrentView("dashboard");
+                } else if (onOpenAuthModal) {
+                  onOpenAuthModal("login");
+                }
+              }}
+              className="btn btn-outline btn-sm"
+              style={{ padding: "7px 14px", fontSize: "12.5px" }}
+            >
+              <LogIn size={13} />
+              {hasAccount ? "Portal" : "Sign In"}
+            </button>
+
+            <button
+              onClick={() => {
+                if (hasAccount) {
+                  setCurrentView("dashboard");
+                } else if (onOpenAuthModal) {
+                  onOpenAuthModal("signup");
+                }
+              }}
+              className="btn btn-gold btn-sm"
+              style={{ padding: "7px 16px", fontSize: "12.5px", boxShadow: "0 0 15px rgba(212, 175, 55, 0.25)" }}
+            >
+              {hasAccount ? <LayoutDashboard size={13} /> : <Sparkles size={13} />}
+              {hasAccount ? "Dashboard" : "Sign Up"}
+            </button>
+          </div>
+
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -295,13 +335,39 @@ export default function Navbar({
               {item.label}
             </button>
           ))}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (onOpenAuthModal) onOpenAuthModal("login");
+              }}
+              className="btn btn-outline btn-sm"
+              style={{ padding: "10px 0" }}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (hasAccount) {
+                  setCurrentView("dashboard");
+                } else if (onOpenAuthModal) {
+                  onOpenAuthModal("signup");
+                }
+              }}
+              className="btn btn-gold btn-sm"
+              style={{ padding: "10px 0" }}
+            >
+              {hasAccount ? "Dashboard" : "Sign Up"}
+            </button>
+          </div>
           <button
             onClick={() => {
               onOpenInvestModal();
               setMobileMenuOpen(false);
             }}
-            className="btn btn-gold"
-            style={{ marginTop: "10px" }}
+            className="btn btn-outline-gold"
+            style={{ marginTop: "4px" }}
           >
             Invest Now
           </button>
@@ -313,7 +379,12 @@ export default function Navbar({
         @media (min-width: 1080px) {
           .desktop-nav { display: flex !important; }
           .network-badge { display: flex !important; }
+          .desktop-auth-btns { display: flex !important; }
           .mobile-nav-toggle { display: none !important; }
+        }
+        @media (max-width: 1079px) {
+          .desktop-auth-btns { display: none !important; }
+          .mobile-nav-toggle { display: block !important; }
         }
       `}</style>
     </header>

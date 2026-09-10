@@ -324,7 +324,7 @@ export default function HowItWorksSection({ onOpenInvestModal }) {
               Earn instant blockchain-credited commissions on every qualifying investment activated by your direct referrals on BNB Smart Chain.
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "16px" }}>
               <div style={{ background: "#080808", border: "1px solid var(--border-standard)", borderRadius: "12px", padding: "18px", textAlign: "center" }}>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>Regal Silver ($100 - $999.99)</div>
                 <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--gold-bright)", margin: "8px 0" }}>1.5%</div>
