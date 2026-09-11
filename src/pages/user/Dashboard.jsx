@@ -19,14 +19,23 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import MetricCard from "../../components/common/MetricCard";
 import RoiTimeline from "../../components/common/RoiTimeline";
 import StatusPill from "../../components/common/StatusPill";
-import { initialInvestments, initialReferrals, initialTransactions } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
   const { user } = useOutletContext();
   const [chartFilter, setChartFilter] = useState("30d");
+  const [investments, setInvestments] = useState([]);
+  const [referrals, setReferrals] = useState([]);
+  const [transactions, setTransactions] = useState([]);
 
-  const currentInv = initialInvestments[0];
+  React.useEffect(() => {
+    api.investments.getMy().then((r) => r.success && r.data && setInvestments(r.data));
+    api.referrals.getMy().then((r) => r.success && r.data && setReferrals(r.data));
+    api.transactions.getMy().then((r) => r.success && r.data && setTransactions(r.data));
+  }, []);
+
+  const currentInv = investments[0] || null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -139,7 +148,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Active Investment Spotlight Card */}
-      <div
+      {currentInv ? <div
         className="regal-card card-spotlight"
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -177,7 +186,7 @@ export default function UserDashboard() {
                 <StatusPill status={currentInv.status} />
               </div>
               <span style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "monospace" }}>
-                ID: {currentInv.id} • Tx: {currentInv.txHash.slice(0, 10)}...{currentInv.txHash.slice(-6)}
+                ID: {currentInv.investmentId || currentInv.id} • Tx: {currentInv.txHash ? `${currentInv.txHash.slice(0, 10)}...${currentInv.txHash.slice(-6)}` : "—"}
               </span>
             </div>
           </div>
@@ -204,7 +213,7 @@ export default function UserDashboard() {
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Principal Capital</div>
             <div style={{ fontSize: "22px", fontWeight: 800, color: "var(--gold-bright)", marginTop: "4px" }}>
-              ${currentInv.amount.toLocaleString()} USDT
+              ${Number(currentInv.amount || 0).toLocaleString()} USDT
             </div>
           </div>
 
@@ -221,7 +230,7 @@ export default function UserDashboard() {
                   stroke="var(--gold-bright)"
                   strokeWidth="3"
                   strokeDasharray="94.2"
-                  strokeDashoffset={94.2 - (94.2 * (currentInv.cycleDay / currentInv.totalCycleDays))}
+                  strokeDashoffset={94.2 - (94.2 * ((currentInv.cycleDay || 0) / (currentInv.totalCycleDays || 240)))}
                   strokeLinecap="round"
                   style={{ transition: "stroke-dashoffset 0.8s ease" }}
                 />
@@ -233,7 +242,7 @@ export default function UserDashboard() {
             <div>
               <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Cycle Progress</div>
               <div style={{ fontSize: "20px", fontWeight: 800, color: "#FFF", marginTop: "2px" }}>
-                Day {currentInv.cycleDay} <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>/ {currentInv.totalCycleDays}</span>
+                Day {currentInv.cycleDay || 0} <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>/ {currentInv.totalCycleDays || 240}</span>
               </div>
             </div>
           </div>
@@ -248,14 +257,14 @@ export default function UserDashboard() {
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Today's Yield</div>
             <div style={{ fontSize: "22px", fontWeight: 800, color: "#22C55E", marginTop: "4px" }}>
-              +${currentInv.todayRoi.toFixed(2)}
+              +${Number(currentInv.todayRoi || 0).toFixed(2)}
             </div>
           </div>
 
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Total Accrued</div>
             <div style={{ fontSize: "22px", fontWeight: 800, color: "#FFF", marginTop: "4px" }}>
-              ${currentInv.accruedRoi.toFixed(2)}
+              ${Number(currentInv.accruedRoi || currentInv.totalRoiAccrued || 0).toFixed(2)}
             </div>
           </div>
         </div>
@@ -264,13 +273,13 @@ export default function UserDashboard() {
         <div style={{ marginTop: "16px", position: "relative", zIndex: 2 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", color: "var(--text-secondary)", marginBottom: "6px" }}>
             <span>Protocol Maturity Countdown (Month 8 Release)</span>
-            <span style={{ color: "var(--gold-bright)", fontWeight: 700 }}>144 Days Remaining</span>
+            <span style={{ color: "var(--gold-bright)", fontWeight: 700 }}>{Math.max(0, (currentInv.totalCycleDays || 240) - (currentInv.cycleDay || 0))} Days Remaining</span>
           </div>
           <div style={{ height: "6px", width: "100%", background: "rgba(255, 255, 255, 0.08)", borderRadius: "999px", overflow: "hidden" }}>
             <div
               style={{
                 height: "100%",
-                width: `${(currentInv.cycleDay / currentInv.totalCycleDays) * 100}%`,
+                width: `${((currentInv.cycleDay || 0) / (currentInv.totalCycleDays || 240)) * 100}%`,
                 background: "linear-gradient(90deg, #D4AF37 0%, #F4D77A 100%)",
                 boxShadow: "0 0 10px rgba(212, 175, 55, 0.6)",
                 borderRadius: "999px"
@@ -278,7 +287,14 @@ export default function UserDashboard() {
             />
           </div>
         </div>
-      </div>
+      </div> : (
+        <div className="regal-card" style={{ padding: "28px", background: "rgba(14,14,14,0.9)", border: "1px solid rgba(212,175,55,0.2)", textAlign: "center" }}>
+          <Crown size={32} color="rgba(212,175,55,0.4)" style={{ marginBottom: "12px" }} />
+          <h3 style={{ color: "#FFF", fontSize: "18px", marginBottom: "8px" }}>No Active Investment</h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "16px" }}>Start your first investment to see live cycle progress here.</p>
+          <button onClick={() => navigate("/investment")} className="btn btn-gold btn-sm"><PlusCircle size={14} /> Invest Now</button>
+        </div>
+      )}
 
       {/* ROI Lifecycle Section */}
       <div>
@@ -293,7 +309,7 @@ export default function UserDashboard() {
             View Ledger
           </button>
         </div>
-        <RoiTimeline currentPhase={currentInv.currentPhase} />
+        <RoiTimeline currentPhase={currentInv?.currentPhase} />
       </div>
 
       {/* Simulated Gold Line Chart Card */}
@@ -363,20 +379,24 @@ export default function UserDashboard() {
             </button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {initialTransactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#080808", borderRadius: "8px", border: "1px solid #1A1A1A" }}>
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFF" }}>{tx.type}</div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{tx.date}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: tx.amount.startsWith("+") ? "#22C55E" : tx.amount.startsWith("-") ? "#EF4444" : "#FFF" }}>
-                    {tx.amount}
+            {transactions.length > 0 ? (
+              transactions.slice(0, 4).map((tx) => (
+                <div key={tx.transactionId || tx._id || tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#080808", borderRadius: "8px", border: "1px solid #1A1A1A" }}>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFF" }}>{tx.type}</div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{tx.date}</div>
                   </div>
-                  <StatusPill status={tx.status} />
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: String(tx.amount).startsWith("+") ? "#22C55E" : String(tx.amount).startsWith("-") ? "#EF4444" : "#FFF" }}>
+                      {tx.amount}
+                    </div>
+                    <StatusPill status={tx.status} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", padding: "12px 0" }}>No transactions recorded yet.</div>
+            )}
           </div>
         </div>
 
@@ -389,20 +409,24 @@ export default function UserDashboard() {
             </button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {initialReferrals.map((ref) => (
-              <div key={ref.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#080808", borderRadius: "8px", border: "1px solid #1A1A1A" }}>
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFF" }}>{ref.user}</div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>{ref.wallet}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--gold-bright)" }}>
-                    +${ref.commission.toFixed(2)} ({ref.rate})
+            {referrals.length > 0 ? (
+              referrals.slice(0, 4).map((ref) => (
+                <div key={ref.referralId || ref._id || ref.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#080808", borderRadius: "8px", border: "1px solid #1A1A1A" }}>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFF" }}>{ref.referredUser || ref.user}</div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>{ref.referredWallet || ref.wallet}</div>
                   </div>
-                  <StatusPill status={ref.status} />
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--gold-bright)" }}>
+                      +${Number(ref.commission).toFixed(2)} ({ref.rate})
+                    </div>
+                    <StatusPill status={ref.status} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", padding: "12px 0" }}>No direct referrals yet. Invite friends to earn commissions.</div>
+            )}
           </div>
         </div>
       </div>

@@ -3,20 +3,28 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialInvestments } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserInvestments() {
   const navigate = useNavigate();
-  const [investments] = useState(initialInvestments);
+  const [investments, setInvestments] = useState([]);
   const [selectedInv, setSelectedInv] = useState(null);
+
+  React.useEffect(() => {
+    api.investments.getMy().then((res) => {
+      if (res.success && res.data) {
+        setInvestments(res.data);
+      }
+    });
+  }, []);
 
   const columns = [
     {
       header: "Investment ID",
-      accessor: "id",
+      accessor: "investmentId",
       render: (row) => (
         <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>
-          {row.id}
+          {row.investmentId || row.id}
         </span>
       )
     },

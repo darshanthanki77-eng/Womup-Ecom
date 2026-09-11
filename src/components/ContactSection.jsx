@@ -38,7 +38,13 @@ export default function ContactSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (pe) {
+        data = {};
+      }
 
       if (data.success) {
         setSuccessTicket(data.data);

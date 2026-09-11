@@ -1,36 +1,69 @@
-import { Bell, CheckCircle2, Send, Users } from "lucide-react";
-import React, { useState } from "react";
+import { Bell, CheckCircle2, Loader2, Send } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
+import { api } from "../../services/api";
 
 export default function AdminNotifications() {
-  const [history, setHistory] = useState([
-    { id: "BRD-101", title: "BNB Smart Chain Node Upgraded", audience: "All Users", sent: "2026-09-08", delivered: 1428, read: 980, status: "Delivered" },
-    { id: "BRD-100", title: "Regal Gold Tier Yield Accelerated", audience: "Gold Tier Investors", sent: "2026-09-01", delivered: 1270, read: 1140, status: "Delivered" }
-  ]);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState("All Users");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState("Normal");
   const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleBroadcast = (e) => {
+  const fetchBroadcasts = async () => {
+    try {
+      const res = await api.notifications.getBroadcasts();
+      if (res.success && Array.isArray(res.data)) {
+        const mapped = res.data.map((b) => ({
+          id: b.notificationId || `BRD-${b._id?.slice(-4)}`,
+          title: b.title,
+          audience: "All Users",
+          sent: b.createdAt ? new Date(b.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+          delivered: 1428,
+          read: b.read ? 1 : 0,
+          status: "Delivered"
+        }));
+        setHistory(mapped);
+      }
+    } catch (err) {
+      console.warn("Could not load broadcasts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBroadcasts();
+  }, []);
+
+  const handleBroadcast = async (e) => {
     e.preventDefault();
-    const newEntry = {
-      id: `BRD-${Math.floor(100 + Math.random() * 900)}`,
-      title,
-      audience,
-      sent: new Date().toISOString().slice(0, 10),
-      delivered: audience === "All Users" ? 1428 : 500,
-      read: 0,
-      status: "Delivered"
-    };
+    setSubmitting(true);
+    try {
+      const res = await api.notifications.broadcast({
+        title,
+        message,
+        type: priority === "Critical" ? "Critical Alert" : priority === "High" ? "Security Alert" : "System Announcement"
+      });
 
-    setHistory([newEntry, ...history]);
-    setTitle("");
-    setMessage("");
-    setSuccess("Announcement broadcasted across selected user segments!");
-    setTimeout(() => setSuccess(""), 4000);
+      if (res.success) {
+        setTitle("");
+        setMessage("");
+        setSuccess("Announcement broadcasted across selected user segments!");
+        fetchBroadcasts();
+      } else {
+        setSuccess(`Failed to broadcast: ${res.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      setSuccess(`Error: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+      setTimeout(() => setSuccess(""), 4000);
+    }
   };
 
   const columns = [
@@ -101,8 +134,8 @@ export default function AdminNotifications() {
             <div>
               <label className="regal-label">Target Audience Segment</label>
               <select value={audience} onChange={(e) => setAudience(e.target.value)} className="regal-input" style={{ background: "#070707" }}>
-                <option value="All Users">All Registered Users (1,428)</option>
-                <option value="Active Investors">Active Capital Holders Only (982)</option>
+                <option value="All Users">All Registered Users</option>
+                <option value="Active Investors">Active Capital Holders Only</option>
                 <option value="Gold Tier Investors">Regal Gold Package Holders</option>
                 <option value="Black Tier VIP">Regal Black VIP Institutional</option>
               </select>
@@ -142,17 +175,22 @@ export default function AdminNotifications() {
             />
           </div>
 
-          <button type="submit" className="btn btn-gold btn-sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
-            <Send size={14} /> Transmit Broadcast
+          <button type="submit" disabled={submitting} className="btn btn-gold btn-sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
+            {submitting ? <Loader2 size={14} className="spin" /> : <Send size={14} />} Transmit Broadcast
           </button>
         </form>
       </div>
 
       {/* Broadcast History */}
       <div>
-        <h3 style={{ fontSize: "18px", color: "#FFF", marginBottom: "14px" }}>
-          Past Transmitted Dispatches
-        </h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+          <h3 style={{ fontSize: "18px", color: "#FFF" }}>Past Transmitted Dispatches</h3>
+          {loading && (
+            <span style={{ fontSize: "12px", color: "var(--gold-bright)", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Loader2 size={13} className="spin" /> Loading broadcasts...
+            </span>
+          )}
+        </div>
         <RegalTable
           columns={columns}
           data={history}

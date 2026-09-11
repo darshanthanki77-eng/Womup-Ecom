@@ -176,8 +176,8 @@ export default function Navbar({
             BSC (56)
           </div>
 
-          {/* Wallet Button */}
-          {wallet.connected ? (
+          {/* Connected Wallet Pill (if wallet active) */}
+          {wallet?.connected && (
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setWalletDropdownOpen(!walletDropdownOpen)}
@@ -242,43 +242,49 @@ export default function Navbar({
                 </div>
               )}
             </div>
-          ) : (
-            <button onClick={onOpenWalletModal} className="btn btn-gold btn-sm">
-              <Wallet size={15} />
-              Connect Wallet
-            </button>
           )}
 
-          {/* Sign In / Sign Up / Dashboard Access Buttons (Desktop) */}
-          <div className="desktop-auth-btns" style={{ display: "none", alignItems: "center", gap: "10px" }}>
+          {/* Authentication Action Buttons: Sign In & Sign Up (No Direct Dashboard Access) */}
+          <div className="auth-action-btns" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               onClick={() => {
-                if (hasAccount) {
-                  setCurrentView("dashboard");
-                } else if (onOpenAuthModal) {
-                  onOpenAuthModal("login");
-                }
+                if (onOpenAuthModal) onOpenAuthModal("login");
               }}
               className="btn btn-outline btn-sm"
-              style={{ padding: "7px 14px", fontSize: "12.5px" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: 600,
+                borderColor: "rgba(212, 175, 55, 0.4)",
+                color: "#F5F5F5",
+                borderRadius: "8px"
+              }}
             >
-              <LogIn size={13} />
-              {hasAccount ? "Portal" : "Sign In"}
+              <LogIn size={14} color="var(--gold-primary)" />
+              Sign In
             </button>
 
             <button
               onClick={() => {
-                if (hasAccount) {
-                  setCurrentView("dashboard");
-                } else if (onOpenAuthModal) {
-                  onOpenAuthModal("signup");
-                }
+                if (onOpenAuthModal) onOpenAuthModal("signup");
               }}
               className="btn btn-gold btn-sm"
-              style={{ padding: "7px 16px", fontSize: "12.5px", boxShadow: "0 0 15px rgba(212, 175, 55, 0.25)" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 18px",
+                fontSize: "13px",
+                fontWeight: 700,
+                borderRadius: "8px",
+                boxShadow: "0 0 16px rgba(212, 175, 55, 0.3)"
+              }}
             >
-              {hasAccount ? <LayoutDashboard size={13} /> : <Sparkles size={13} />}
-              {hasAccount ? "Dashboard" : "Sign Up"}
+              <Sparkles size={14} />
+              Sign Up
             </button>
           </div>
 
@@ -349,16 +355,12 @@ export default function Navbar({
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                if (hasAccount) {
-                  setCurrentView("dashboard");
-                } else if (onOpenAuthModal) {
-                  onOpenAuthModal("signup");
-                }
+                if (onOpenAuthModal) onOpenAuthModal("signup");
               }}
               className="btn btn-gold btn-sm"
               style={{ padding: "10px 0" }}
             >
-              {hasAccount ? "Dashboard" : "Sign Up"}
+              Sign Up
             </button>
           </div>
           <button
@@ -379,11 +381,11 @@ export default function Navbar({
         @media (min-width: 1080px) {
           .desktop-nav { display: flex !important; }
           .network-badge { display: flex !important; }
-          .desktop-auth-btns { display: flex !important; }
+          .auth-action-btns { display: flex !important; }
           .mobile-nav-toggle { display: none !important; }
         }
         @media (max-width: 1079px) {
-          .desktop-auth-btns { display: none !important; }
+          .auth-action-btns { display: none !important; }
           .mobile-nav-toggle { display: block !important; }
         }
       `}</style>

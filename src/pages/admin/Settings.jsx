@@ -1,22 +1,77 @@
-import { CheckCircle2, Lock, Plus, Save, Settings, Shield, UserPlus, Users } from "lucide-react";
-import React, { useState } from "react";
+import { CheckCircle2, Loader2, Save, Users, UserPlus } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import StatusPill from "../../components/common/StatusPill";
-import { initialSystemSettings } from "../../data/portalData";
+import { api } from "../../services/api";
+
+const defaultSettings = {
+  withdrawals: {
+    minimumUsdt: 50,
+    maximumUsdt: 50000,
+    feePercent: 1.0,
+    approvalMode: "Manual Above $1,000"
+  },
+  roi: {
+    dailyCutoffUtc: "00:00 UTC",
+    autoPayout: true
+  },
+  blockchain: {
+    rpcUrl: "https://bsc-dataseed.binance.org/",
+    confirmationsRequired: 15
+  },
+  emergency: {
+    pauseInvestments: false,
+    pauseWithdrawals: false,
+    pauseRoi: false
+  }
+};
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState(initialSystemSettings);
-  const [adminList, setAdminList] = useState([
+  const [settings, setSettings] = useState(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [adminList] = useState([
     { email: "superadmin@regal.io", role: "Super Admin", access: "Full System Authority", status: "Active" },
     { email: "finance@regal.io", role: "Finance Admin", access: "Investments, ROI, Withdrawals", status: "Active" },
     { email: "support@regal.io", role: "Support Admin", access: "Users, Tickets, Notifications", status: "Active" },
     { email: "content@regal.io", role: "Content Admin", access: "CMS, FAQ, Docs", status: "Active" }
   ]);
-  const [saved, setSaved] = useState(false);
 
-  const handleSaveSettings = (e) => {
+  useEffect(() => {
+    async function loadSettings() {
+      setLoading(true);
+      try {
+        const res = await api.admin.getSettings();
+        if (res.success && Array.isArray(res.data)) {
+          const loaded = { ...defaultSettings };
+          res.data.forEach((item) => {
+            if (item.key && item.value !== undefined) {
+              loaded[item.key] = item.value;
+            }
+          });
+          setSettings(loaded);
+        }
+      } catch (err) {
+        console.warn("Could not fetch settings from server, using active state", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await Promise.all([
+        api.admin.updateSetting("withdrawals", settings.withdrawals),
+        api.admin.updateSetting("roi", settings.roi),
+        api.admin.updateSetting("blockchain", settings.blockchain)
+      ]);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Failed to update settings:", err);
+    }
   };
 
   return (
@@ -72,7 +127,14 @@ export default function AdminSettings() {
 
       {/* Configurable Financial & Operational Settings Form */}
       <div className="regal-card" style={{ padding: "28px", background: "#0E0E0E" }}>
-        <h3 style={{ fontSize: "18px", color: "#FFF", marginBottom: "20px" }}>Configurable Protocol Parameters</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <h3 style={{ fontSize: "18px", color: "#FFF" }}>Configurable Protocol Parameters</h3>
+          {loading && (
+            <span style={{ fontSize: "12px", color: "var(--gold-bright)", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Loader2 size={14} className="spin" /> Loading parameters...
+            </span>
+          )}
+        </div>
 
         <form onSubmit={handleSaveSettings} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {/* Withdrawal Settings */}

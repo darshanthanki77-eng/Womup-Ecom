@@ -19,9 +19,12 @@ export default function DashboardView({ wallet, onOpenInvestModal, onSwitchToRoi
 
   useEffect(() => {
     fetch("/api/dashboard")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      })
       .then((data) => {
-        if (data.success) setDashboardData(data.data);
+        if (data?.success) setDashboardData(data.data);
       })
       .catch(() => {});
   }, []);

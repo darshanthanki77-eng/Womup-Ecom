@@ -1,0 +1,19 @@
+name: Blockchain Indexer & Confirmation
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  index-chain:
+    name: Poll Pending BSC Transactions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Query Blockchain Health & Confirmations
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_API_URL || 'http://localhost:5001' }}
+        run: |
+          curl -s "$BACKEND_URL/api/v1/blockchain/status" || echo "Node ping completed."

@@ -1,37 +1,75 @@
-import { CheckCircle2, Edit3, FileCode, FileText, Globe, Save } from "lucide-react";
-import React, { useState } from "react";
+import { CheckCircle2, Globe, Loader2, Save } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { api } from "../../services/api";
+
+const initialCmsContent = {
+  hero: {
+    headline: "ENTER THE REGAL ECOSYSTEM",
+    subheadline: "Powered by RGL",
+    description: "A luxury digital asset and Web3 investment platform engineered on BNB Smart Chain. Audited smart contracts, structured 8-month cycles, transparent daily ROI, and tiered referral rewards."
+  },
+  risk: {
+    title: "Risk Disclosure & Protocol Terms",
+    text: "Participation in digital asset investment packages on the BNB Smart Chain carries inherent market, technical, and regulatory risks. While Regal smart contracts are formally audited, capital allocation involves financial risk and users should review complete documentation."
+  },
+  faq: {
+    generalQuestion: "What is Regal (RGL)?",
+    generalAnswer: "Regal is a luxury digital asset and Web3 investment platform deployed on the BNB Smart Chain (BEP-20) with transparent daily yield and 8-month cycles."
+  }
+};
 
 export default function AdminCMS() {
   const [activeSection, setActiveSection] = useState("hero");
-  const [content, setContent] = useState({
-    hero: {
-      headline: "ENTER THE REGAL ECOSYSTEM",
-      subheadline: "Powered by RGL",
-      description: "A luxury digital asset and Web3 investment platform engineered on BNB Smart Chain. Audited smart contracts, structured 8-month cycles, transparent daily ROI, and tiered referral rewards."
-    },
-    risk: {
-      title: "Risk Disclosure & Protocol Terms",
-      text: "Participation in digital asset investment packages on the BNB Smart Chain carries inherent market, technical, and regulatory risks. While Regal smart contracts are formally audited, capital allocation involves financial risk and users should review complete documentation."
-    },
-    faq: {
-      generalQuestion: "What is Regal (RGL)?",
-      generalAnswer: "Regal is a luxury digital asset and Web3 investment platform deployed on the BNB Smart Chain (BEP-20) with transparent daily yield and 8-month cycles."
-    }
-  });
+  const [content, setContent] = useState(initialCmsContent);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    async function loadCms() {
+      try {
+        const res = await api.cms.getAll();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const loaded = { ...initialCmsContent };
+          res.data.forEach((item) => {
+            if (item.slug && item.content) {
+              loaded[item.slug] = item.content;
+            }
+          });
+          setContent(loaded);
+        }
+      } catch (err) {
+        console.warn("Could not load CMS content from server:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCms();
+  }, []);
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true);
+    try {
+      await api.cms.save({
+        slug: activeSection,
+        title: activeSection.toUpperCase(),
+        type: "cms-section",
+        content: content[activeSection]
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Failed to save CMS section:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sections = [
     { id: "hero", label: "Hero & Headline" },
     { id: "risk", label: "Legal & Risk Disclosures" },
-    { id: "faq", label: "FAQ Content" },
-    { id: "docs", label: "Documentation Texts" },
-    { id: "footer", label: "Footer & Copyright" }
+    { id: "faq", label: "FAQ Content" }
   ];
 
   return (
@@ -140,7 +178,7 @@ export default function AdminCMS() {
                 <label className="regal-label">Featured Question</label>
                 <input
                   type="text"
-                  value={content.faq.generalQuestion}
+                  value={content.faq?.generalQuestion || ""}
                   onChange={(e) => setContent({ ...content, faq: { ...content.faq, generalQuestion: e.target.value } })}
                   className="regal-input"
                   required
@@ -150,7 +188,7 @@ export default function AdminCMS() {
               <div>
                 <label className="regal-label">Featured Answer</label>
                 <textarea
-                  value={content.faq.generalAnswer}
+                  value={content.faq?.generalAnswer || ""}
                   onChange={(e) => setContent({ ...content, faq: { ...content.faq, generalAnswer: e.target.value } })}
                   rows={4}
                   className="regal-input"
@@ -161,8 +199,8 @@ export default function AdminCMS() {
           )}
 
           <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
-            <button type="submit" className="btn btn-gold btn-sm">
-              <Save size={15} /> Save & Publish Changes
+            <button type="submit" disabled={saving} className="btn btn-gold btn-sm">
+              {saving ? <Loader2 size={15} className="spin" /> : <Save size={15} />} Save & Publish Changes
             </button>
             <a href="/" target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
               <Globe size={15} /> View Public Website

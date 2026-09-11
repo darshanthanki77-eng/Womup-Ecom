@@ -16,9 +16,12 @@ export default function RoiCenterView({ wallet, onBackToDashboard, onOpenInvestM
 
   useEffect(() => {
     fetch("/api/roi")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      })
       .then((data) => {
-        if (data.success) setRoiData(data.data);
+        if (data?.success) setRoiData(data.data);
       })
       .catch(() => {});
   }, []);

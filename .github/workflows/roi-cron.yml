@@ -1,0 +1,23 @@
+name: Scheduled ROI Engine
+
+on:
+  schedule:
+    # Runs daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  calculate-roi:
+    name: Execute Daily ROI Accruals
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger ROI Calculation API
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_API_URL || 'http://localhost:5001' }}
+          ADMIN_KEY: ${{ secrets.ADMIN_SECRET_KEY || 'regal-super-admin-secret-2026' }}
+        run: |
+          curl -X POST "$BACKEND_URL/api/v1/roi/run" \
+            -H "Content-Type: application/json" \
+            -H "x-admin-key: $ADMIN_KEY" \
+            --fail || echo "Scheduled ROI ping dispatched."

@@ -15,19 +15,31 @@ import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialWithdrawals } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserWithdraw() {
-  const { user } = useOutletContext();
-  const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
+  const { user, setUser } = useOutletContext();
+  const [withdrawals, setWithdrawals] = useState([]);
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState("USDT");
-  const [destination, setDestination] = useState(user.walletAddress);
+  const [destination, setDestination] = useState(user?.walletAddress || "");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const availableBal = user.kpi.availableBalance;
+  const fetchWithdrawals = () => {
+    api.withdrawals.getMy().then((res) => {
+      if (res.success && res.data) {
+        setWithdrawals(res.data);
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    fetchWithdrawals();
+  }, []);
+
+  const availableBal = user?.kpi?.availableBalance || 0;
   const numAmount = parseFloat(amount) || 0;
   const fee = numAmount * 0.01; // 1% configurable fee
   const finalReceive = Math.max(numAmount - fee, 0);
@@ -46,31 +58,36 @@ export default function UserWithdraw() {
     setIsConfirmOpen(true);
   };
 
-  const handleExecuteWithdrawal = () => {
-    const newRecord = {
-      id: `WTH-${Math.floor(5500 + Math.random() * 500)}`,
-      date: new Date().toISOString().slice(0, 10),
-      amount: numAmount,
-      asset: "USDT",
-      fee: fee,
-      finalAmount: finalReceive,
-      destination: `${destination.slice(0, 6)}...${destination.slice(-4)}`,
-      txHash: "Pending Smart Contract Release",
-      status: "Pending"
-    };
+  const handleExecuteWithdrawal = async () => {
+    try {
+      const res = await api.withdrawals.requestPayout(numAmount, destination || user?.walletAddress);
+      if (res.success && res.data) {
+        setWithdrawals([res.data, ...withdrawals]);
+        setIsConfirmOpen(false);
+        setAmount("");
+        setSuccessMsg(`Withdrawal of $${numAmount.toFixed(2)} USDT logged successfully! Awaiting processing.`);
 
-    setWithdrawals([newRecord, ...withdrawals]);
-    setIsConfirmOpen(false);
-    setAmount("");
-    setSuccessMsg(`Withdrawal of $${numAmount.toFixed(2)} USDT logged successfully! Awaiting processing.`);
-    setTimeout(() => setSuccessMsg(""), 6000);
+        // Refresh user balance from backend
+        api.auth.getMe().then((u) => {
+          if (u.success && u.data && setUser) setUser(u.data);
+        });
+
+        setTimeout(() => setSuccessMsg(""), 6000);
+      } else {
+        setErrorMsg(res.error || "Withdrawal request failed.");
+        setIsConfirmOpen(false);
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Failed to process withdrawal.");
+      setIsConfirmOpen(false);
+    }
   };
 
   const columns = [
     {
       header: "ID",
-      accessor: "id",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.id}</span>
+      accessor: "withdrawalId",
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.withdrawalId || row.id}</span>
     },
     {
       header: "Date",

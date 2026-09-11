@@ -1,24 +1,34 @@
-import { Database, ExternalLink, Eye, FileSpreadsheet, Filter, X } from "lucide-react";
+import { Database, Eye, FileSpreadsheet, X } from "lucide-react";
 import React, { useState } from "react";
 import RegalTable from "../../components/common/RegalTable";
+import ScrollableTabs from "../../components/common/ScrollableTabs";
 import StatusPill from "../../components/common/StatusPill";
-import { initialTransactions } from "../../data/portalData";
+import { api } from "../../services/api";
 import { exportToCsv } from "../../utils/exportCsv";
 
 export default function AdminTransactions() {
-  const [transactions] = useState(initialTransactions);
+  const [transactions, setTransactions] = useState([]);
   const [inspectTx, setInspectTx] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    api.transactions.getAll(typeFilter !== "All" ? typeFilter : undefined).then((res) => {
+      if (res.success && res.data) setTransactions(res.data);
+      setLoading(false);
+    });
+  }, [typeFilter]);
 
   const columns = [
     {
       header: "Record ID",
-      accessor: "id",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>{row.id}</span>
+      accessor: "transactionId",
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>{row.transactionId || row.id}</span>
     },
     {
       header: "Timestamp",
-      accessor: "date",
-      render: (row) => <span>{row.date}</span>
+      accessor: "createdAt",
+      render: (row) => <span>{row.createdAt ? new Date(row.createdAt).toLocaleString() : row.date || "—"}</span>
     },
     {
       header: "Type",
@@ -28,21 +38,26 @@ export default function AdminTransactions() {
     {
       header: "Amount",
       accessor: "amount",
-      render: (row) => (
-        <span style={{ fontWeight: 700, color: row.amount.startsWith("+") ? "#22C55E" : row.amount.startsWith("-") ? "#EF4444" : "#FFF" }}>
-          {row.amount} {row.asset}
-        </span>
-      )
+      render: (row) => {
+        const amt = row.amount || "";
+        const isPos = String(amt).startsWith("+");
+        const isNeg = String(amt).startsWith("-");
+        return (
+          <span style={{ fontWeight: 700, color: isPos ? "#22C55E" : isNeg ? "#EF4444" : "#FFF" }}>
+            {amt} {row.asset || row.currency || ""}
+          </span>
+        );
+      }
     },
     {
       header: "User Wallet",
       accessor: "wallet",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-primary)", fontSize: "12px" }}>{row.wallet}</span>
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-primary)", fontSize: "12px" }}>{row.wallet || row.userWallet || "—"}</span>
     },
     {
       header: "Block",
-      accessor: "block",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--text-muted)" }}>#{row.block}</span>
+      accessor: "blockNumber",
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--text-muted)" }}>#{row.blockNumber || row.block || "—"}</span>
     },
     {
       header: "Status",
@@ -80,6 +95,17 @@ export default function AdminTransactions() {
         </button>
       </div>
 
+      {/* Type Filter Tabs */}
+      <ScrollableTabs
+        tabs={["All", "DEPOSIT", "ROI", "REFERRAL", "WITHDRAWAL"]}
+        activeTab={typeFilter}
+        onTabChange={(t) => { setTypeFilter(t); setLoading(true); }}
+      />
+
+      {loading && (
+        <div style={{ color: "var(--text-muted)", fontSize: "14px", padding: "10px 0" }}>Loading transactions...</div>
+      )}
+
       {/* Table */}
       <RegalTable
         columns={columns}
@@ -92,7 +118,7 @@ export default function AdminTransactions() {
         <div className="modal-overlay" onClick={() => setInspectTx(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: "18px" }}>Transaction Ledger Entry: {inspectTx.id}</h3>
+              <h3 style={{ fontSize: "18px" }}>Transaction Ledger Entry: {inspectTx.transactionId || inspectTx.id}</h3>
               <button onClick={() => setInspectTx(null)} style={{ background: "none", border: "none", color: "var(--text-muted)" }}>
                 <X size={20} />
               </button>
@@ -101,7 +127,7 @@ export default function AdminTransactions() {
               <div style={{ background: "#060606", padding: "14px", borderRadius: "8px", border: "1px solid var(--border-standard)" }}>
                 <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>TRANSACTION HASH</div>
                 <div style={{ fontFamily: "monospace", color: "var(--gold-bright)", wordBreak: "break-all", marginTop: "4px" }}>
-                  {inspectTx.txHash}
+                  {inspectTx.txHash || inspectTx.transactionHash || "—"}
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -110,7 +136,7 @@ export default function AdminTransactions() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>Block Number:</span>
-                <span style={{ color: "#FFF", fontFamily: "monospace" }}>#{inspectTx.block}</span>
+                <span style={{ color: "#FFF", fontFamily: "monospace" }}>#{inspectTx.blockNumber || inspectTx.block || "—"}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>Type & Amount:</span>
@@ -118,7 +144,11 @@ export default function AdminTransactions() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>Target Wallet:</span>
-                <span style={{ fontFamily: "monospace", color: "#FFF" }}>{inspectTx.wallet}</span>
+                <span style={{ fontFamily: "monospace", color: "#FFF" }}>{inspectTx.wallet || inspectTx.userWallet || "—"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)" }}>Timestamp:</span>
+                <span style={{ color: "#FFF" }}>{inspectTx.createdAt ? new Date(inspectTx.createdAt).toLocaleString() : "—"}</span>
               </div>
             </div>
             <div className="modal-footer">

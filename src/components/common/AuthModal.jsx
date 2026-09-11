@@ -8,6 +8,7 @@ import {
     Crown,
     Lock,
     Mail,
+    Phone,
     ShieldCheck,
     Sparkles,
     User,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { initialUser } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AuthModal({ isOpen, onClose, initialMode = "signup", defaultSponsor = "", redirectTo = "/dashboard" }) {
   const navigate = useNavigate();
@@ -25,17 +26,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
   // Sign Up Form State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
-  const [sponsorId, setSponsorId] = useState(defaultSponsor || "RGL7821");
+  const [sponsorId, setSponsorId] = useState(defaultSponsor || "");
 
   // Log In Form State
-  const [loginIdentifier, setLoginIdentifier] = useState(""); // Referral ID or Wallet
+  const [loginIdentifier, setLoginIdentifier] = useState(""); // Referral ID, Phone, Email, or Wallet
   const [loginPassword, setLoginPassword] = useState("");
 
   // Status & Success state
   const [errorMsg, setErrorMsg] = useState("");
   const [createdUser, setCreatedUser] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
@@ -55,93 +59,95 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
   if (!isOpen) return null;
 
   // Handler: Sign Up
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorMsg("Please enter your full name.");
       return;
     }
-    if (!email.trim() || !email.includes("@")) {
-      setErrorMsg("Please enter a valid email address.");
+    if (!email.trim() && !phone.trim()) {
+      setErrorMsg("Please enter either an email address or phone number.");
+      return;
+    }
+    if (!sponsorId.trim()) {
+      setErrorMsg("Sponsor Referral ID is mandatory. Please enter your sponsor's Referral ID.");
       return;
     }
 
-    // Generate unique Referral ID starting strictly with "RGL"
-    const randomDigits = Math.floor(10000 + Math.random() * 90000); // 5 digits
-    const generatedReferralId = `RGL${randomDigits}`;
+    setSubmitting(true);
+    setErrorMsg("");
 
-    const shortAddr = walletAddress.length > 12 
-      ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` 
-      : walletAddress;
+    try {
+      const res = await api.auth.register({
+        name: name.trim(),
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        password: signupPassword.trim() || undefined,
+        walletAddress: walletAddress.trim(),
+        sponsorRef: sponsorId.trim().toUpperCase()
+      });
 
-    const newUser = {
-      id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: name.trim(),
-      email: email.trim(),
-      walletAddress: walletAddress.trim(),
-      shortAddress: shortAddr,
-      referralCode: generatedReferralId, // Guaranteed prefix RGL
-      sponsor: sponsorId.trim() ? `${sponsorId.trim()} (Sponsor)` : "RGL7821 (Protocol Genesis)",
-      registrationDate: new Date().toISOString().slice(0, 10),
-      status: "ACTIVE",
-      network: "BNB Smart Chain (Mainnet 56)",
-      balances: {
-        bnb: "1.250",
-        usdt: "5,000.00",
-        rgl: "10,000.00"
-      },
-      kpi: {
-        totalInvested: 0,
-        activeInvested: 0,
-        totalRoi: 0,
-        pendingRoi: 0,
-        paidRoi: 0,
-        referralEarnings: 0,
-        availableBalance: 0,
-        principalReturn: 0
+      if (res.success && res.data) {
+        const u = res.data;
+        if (res.token) localStorage.setItem("regal_token", res.token);
+        localStorage.setItem("regal_user", JSON.stringify(u));
+        setCreatedUser(u);
+
+        // Fire celebratory confetti
+        confetti({
+          particleCount: 75,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#D4AF37", "#F4D77A", "#FFFFFF", "#22C55E"]
+        });
+      } else {
+        setErrorMsg(res.error || "Failed to register account.");
       }
-    };
-
-    // Persist to local storage
-    localStorage.setItem("regal_user", JSON.stringify(newUser));
-    setCreatedUser(newUser);
-
-    // Fire celebratory confetti
-    confetti({
-      particleCount: 75,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#D4AF37", "#F4D77A", "#FFFFFF", "#22C55E"]
-    });
+    } catch (err) {
+      setErrorMsg(err.message || "Registration request failed.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Handler: Log In
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     const id = loginIdentifier.trim();
     if (!id) {
-      setErrorMsg("Please enter your Referral ID (e.g. RGL...) or Wallet Address.");
+      setErrorMsg("Please enter your Referral ID (e.g. RGL...), Phone, Email, or Wallet Address.");
       return;
     }
 
-    let userToLoad = initialUser;
-    const existing = localStorage.getItem("regal_user");
-    if (existing) {
-      try {
-        const parsed = JSON.parse(existing);
-        if (parsed.referralCode?.toLowerCase() === id.toLowerCase() || parsed.walletAddress?.toLowerCase() === id.toLowerCase()) {
-          userToLoad = parsed;
-        } else if (id.toUpperCase().startsWith("RGL")) {
-          userToLoad = { ...parsed, referralCode: id.toUpperCase() };
-        }
-      } catch (err) {}
-    } else if (id.toUpperCase().startsWith("RGL")) {
-      userToLoad = { ...initialUser, referralCode: id.toUpperCase() };
-    }
+    setSubmitting(true);
+    setErrorMsg("");
 
-    localStorage.setItem("regal_user", JSON.stringify(userToLoad));
-    onClose();
-    navigate(redirectTo || "/dashboard");
+    try {
+      const res = await api.auth.login(id, loginPassword);
+      if (res.success && res.data) {
+        if (res.token) localStorage.setItem("regal_token", res.token);
+        localStorage.setItem("regal_user", JSON.stringify(res.data));
+        onClose();
+        navigate(redirectTo || "/dashboard");
+      } else {
+        setErrorMsg(res.error || "Account not found in database. Please click 'Create Account' to register first.");
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Login request failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSwitchToSignupFromNotFound = () => {
+    const id = loginIdentifier.trim();
+    if (id.includes("@")) {
+      setEmail(id);
+    } else if (/^[\+\d\s\-]{6,}$/.test(id)) {
+      setPhone(id);
+    }
+    setErrorMsg("");
+    setMode("signup");
   };
 
   const handleCopyCode = () => {
@@ -310,8 +316,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
             </div>
 
             {errorMsg && (
-              <div style={{ color: "#EF4444", background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "8px", padding: "10px 14px", fontSize: "12.5px", display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-                <AlertCircle size={15} /> {errorMsg}
+              <div style={{ color: "#EF4444", background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "8px", padding: "10px 14px", fontSize: "12.5px", display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <AlertCircle size={15} /> {errorMsg}
+                </div>
+                {errorMsg.toLowerCase().includes("not found") && mode === "login" && (
+                  <button
+                    type="button"
+                    onClick={handleSwitchToSignupFromNotFound}
+                    className="btn btn-gold btn-sm"
+                    style={{ alignSelf: "flex-start", fontSize: "11px", padding: "4px 10px" }}
+                  >
+                    Click here to Create Account with this Phone / ID →
+                  </button>
+                )}
               </div>
             )}
 
@@ -334,38 +352,71 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
                   </div>
                 </div>
 
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>Email Address</label>
+                    <div style={{ position: "relative" }}>
+                      <Mail size={16} color="var(--gold-primary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. duke@regal.io"
+                        className="regal-input"
+                        style={{ paddingLeft: "40px" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>Phone Number</label>
+                    <div style={{ position: "relative" }}>
+                      <Phone size={16} color="var(--gold-primary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="e.g. +919988776655"
+                        className="regal-input"
+                        style={{ paddingLeft: "40px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>Email Address</label>
+                  <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>Web3 Key / Password (Optional)</label>
                   <div style={{ position: "relative" }}>
-                    <Mail size={16} color="var(--gold-primary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+                    <Lock size={16} color="var(--gold-primary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. duke@regal-asset.io"
+                      type="password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      placeholder="Create a password for signing in"
                       className="regal-input"
                       style={{ paddingLeft: "40px" }}
-                      required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>Sponsor Referral ID (Mandatory)</label>
+                  <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>
+                    Sponsor Referral ID <span style={{ color: "#EF4444" }}>*</span> (Mandatory)
+                  </label>
                   <div style={{ position: "relative" }}>
                     <Sparkles size={16} color="var(--gold-bright)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
                     <input
                       type="text"
                       value={sponsorId}
                       onChange={(e) => setSponsorId(e.target.value.toUpperCase())}
-                      placeholder="e.g. RGL7821"
+                      placeholder="Enter Sponsor Referral ID (e.g. RGL...)"
                       className="regal-input"
                       style={{ paddingLeft: "40px", fontFamily: "monospace", fontWeight: 700, color: "var(--gold-bright)" }}
                       required
                     />
                   </div>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "3px", display: "block" }}>
-                    Connected via sponsor invitation. Your personal ID will automatically generate with prefix <strong>RGL</strong>.
+                    Mandatory invite code. Enter the Referral ID of the member who referred you.
                   </span>
                 </div>
 
@@ -386,10 +437,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="btn btn-gold btn-lg"
                   style={{ width: "100%", marginTop: "8px", boxShadow: "0 0 20px rgba(212, 175, 55, 0.3)" }}
                 >
-                  Create Account & Generate Referral ID <ArrowRight size={16} />
+                  {submitting ? "Registering on Blockchain..." : "Create Account & Generate Referral ID"} <ArrowRight size={16} />
                 </button>
               </form>
             ) : (
@@ -397,7 +449,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
               <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
                   <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>
-                    Referral ID or Wallet Address
+                    Referral ID, Phone, Email, or Wallet Address
                   </label>
                   <div style={{ position: "relative" }}>
                     <Sparkles size={16} color="var(--gold-bright)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
@@ -405,14 +457,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
                       type="text"
                       value={loginIdentifier}
                       onChange={(e) => setLoginIdentifier(e.target.value)}
-                      placeholder="e.g. RGL7821 or 0x82A4..."
+                      placeholder="e.g. RGL7821, +919988776655, or 0x82A4..."
                       className="regal-input"
                       style={{ paddingLeft: "40px", fontFamily: "monospace", fontWeight: 700 }}
                       required
                     />
                   </div>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
-                    Hint: Use your generated <strong>RGL...</strong> referral code or default <strong>RGL7821</strong>.
+                    Hint: Enter your generated <strong>RGL...</strong> ID, registered phone number, or wallet address.
                   </span>
                 </div>
 

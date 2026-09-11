@@ -17,12 +17,29 @@ import { useOutletContext } from "react-router-dom";
 import MetricCard from "../../components/common/MetricCard";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialReferrals } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserReferrals() {
   const { user } = useOutletContext();
   const [copied, setCopied] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
+  const [referrals, setReferrals] = useState([]);
+
+  React.useEffect(() => {
+    api.referrals.getMy().then((res) => {
+      if (res.success && res.data) {
+        setReferrals(res.data);
+      }
+    });
+  }, []);
+
+  const totalReferrals = referrals.length;
+  const activeReferrals = referrals.filter((r) => r.status === "PAID" || r.status === "Paid" || r.status === "Active").length;
+  const qualifiedReferrals = referrals.filter((r) => Number(r.investmentAmount) >= 100).length;
+  const totalCommission = referrals.reduce((s, r) => s + Number(r.commission || 0), 0);
+  const pendingCommission = referrals.filter((r) => r.status === "PENDING" || r.status === "Pending").reduce((s, r) => s + Number(r.commission || 0), 0);
+  const paidCommission = referrals.filter((r) => r.status === "PAID" || r.status === "Paid").reduce((s, r) => s + Number(r.commission || 0), 0);
+
   const referralCode = user?.referralCode || "RGL7821";
   const referralLink = typeof window !== "undefined"
     ? `${window.location.origin}/?ref=${referralCode}`
@@ -56,22 +73,22 @@ export default function UserReferrals() {
     {
       header: "Referee User",
       accessor: "user",
-      render: (row) => <span style={{ fontWeight: 600, color: "#FFF" }}>{row.user}</span>
+      render: (row) => <span style={{ fontWeight: 600, color: "#FFF" }}>{row.referredUser || row.user}</span>
     },
     {
       header: "Referred Wallet",
       accessor: "wallet",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.wallet}</span>
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.referredWallet || row.wallet}</span>
     },
     {
       header: "Package Tier",
       accessor: "package",
-      render: (row) => <span>{row.package}</span>
+      render: (row) => <span>{row.packageName || row.package}</span>
     },
     {
       header: "Qualifying Amount",
       accessor: "investmentAmount",
-      render: (row) => <span style={{ color: "#FFF", fontWeight: 700 }}>${row.investmentAmount.toLocaleString()} USDT</span>
+      render: (row) => <span style={{ color: "#FFF", fontWeight: 700 }}>${Number(row.investmentAmount || 0).toLocaleString()} USDT</span>
     },
     {
       header: "Tier Rate",
@@ -209,12 +226,12 @@ export default function UserReferrals() {
 
       {/* 6 Referral Statistics Cards */}
       <div className="dashboard-kpi-grid metric-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px" }}>
-        <MetricCard title="Total Referrals" value="3" subtitle="Invited members" icon={<Users size={18} color="var(--gold-primary)" />} />
-        <MetricCard title="Active Referrals" value="3" subtitle="Active packages" icon={<CheckCircle2 size={18} color="#22C55E" />} />
-        <MetricCard title="Qualified Referrals" value="3" subtitle="Min $100 funded" icon={<Crown size={18} color="var(--gold-bright)" />} />
-        <MetricCard title="Total Commission" value="$217.50" subtitle="Cumulative earned" icon={<Coins size={18} color="var(--gold-primary)" />} />
-        <MetricCard title="Pending Commission" value="$7.50" subtitle="Blockchain audit" icon={<Network size={18} color="#F59E0B" />} />
-        <MetricCard title="Paid Commission" value="$210.00" subtitle="Credited to ledger" icon={<CheckCircle2 size={18} color="#22C55E" />} />
+        <MetricCard title="Total Referrals" value={totalReferrals.toString()} subtitle="Invited members" icon={<Users size={18} color="var(--gold-primary)" />} />
+        <MetricCard title="Active Referrals" value={activeReferrals.toString()} subtitle="Active packages" icon={<CheckCircle2 size={18} color="#22C55E" />} />
+        <MetricCard title="Qualified Referrals" value={qualifiedReferrals.toString()} subtitle="Min $100 funded" icon={<Crown size={18} color="var(--gold-bright)" />} />
+        <MetricCard title="Total Commission" value={`$${totalCommission.toFixed(2)}`} subtitle="Cumulative earned" icon={<Coins size={18} color="var(--gold-primary)" />} />
+        <MetricCard title="Pending Commission" value={`$${pendingCommission.toFixed(2)}`} subtitle="Blockchain audit" icon={<Network size={18} color="#F59E0B" />} />
+        <MetricCard title="Paid Commission" value={`$${paidCommission.toFixed(2)}`} subtitle="Credited to ledger" icon={<CheckCircle2 size={18} color="#22C55E" />} />
       </div>
 
       {/* Visual Multi-Tier Cascading Commission Tree */}
@@ -257,7 +274,7 @@ export default function UserReferrals() {
         </h3>
         <RegalTable
           columns={columns}
-          data={initialReferrals}
+          data={referrals}
           searchPlaceholder="Filter referees by name or wallet..."
         />
       </div>

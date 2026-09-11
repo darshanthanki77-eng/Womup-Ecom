@@ -24,24 +24,48 @@ import {
     X
 } from "lucide-react";
 import { motion } from "framer-motion";
-import React, { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { coinHero } from "../assets";
-import PortalSwitcher from "../components/common/PortalSwitcher";
-import { initialUser } from "../data/portalData";
+import { api } from "../services/api";
 
 export default function UserLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Strict Authentication Guard: Only authenticated users can access the dashboard/portal
+  const token = localStorage.getItem("regal_token");
+  const savedUserStr = localStorage.getItem("regal_user");
+
+  if (!token || !savedUserStr) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem("regal_user");
-      if (saved) return JSON.parse(saved);
+      if (savedUserStr) return JSON.parse(savedUserStr);
     } catch (e) {}
-    return initialUser;
+    return null;
   });
   const [notifDropdown, setNotifDropdown] = useState(false);
+  const [liveNotifs, setLiveNotifs] = useState([]);
+
+  // Fetch live user and notifications from API on mount
+  React.useEffect(() => {
+    api.auth.getMe().then((res) => {
+      if (res.success && res.data) {
+        setUser(res.data);
+        localStorage.setItem("regal_user", JSON.stringify(res.data));
+      }
+    });
+
+    api.notifications.getMy().then((res) => {
+      if (res.success && res.data) {
+        setLiveNotifs(res.data.slice(0, 3));
+      }
+    });
+  }, []);
 
   // Sync user updates to localStorage
   const handleUpdateUser = (updated) => {
@@ -55,6 +79,7 @@ export default function UserLayout() {
   const handleSignOut = () => {
     try {
       localStorage.removeItem("regal_user");
+      localStorage.removeItem("regal_token");
     } catch (e) {}
     navigate("/");
   };
@@ -93,8 +118,6 @@ export default function UserLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-deep-black)" }}>
-      <PortalSwitcher />
-
       {/* Desktop Left Sidebar */}
       <aside
         style={{
@@ -316,8 +339,15 @@ export default function UserLayout() {
                     </Link>
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-                    <p style={{ marginBottom: "8px" }}>🟢 <strong>Investment Confirmed</strong> at block #38942104.</p>
-                    <p>💰 <strong>Daily ROI Accrued:</strong> +$7.50 USDT.</p>
+                    {liveNotifs.length > 0 ? (
+                      liveNotifs.map((n) => (
+                        <p key={n.notificationId || n._id} style={{ marginBottom: "8px" }}>
+                          🟢 <strong>{n.title}:</strong> {n.message}
+                        </p>
+                      ))
+                    ) : (
+                      <p>No new notifications.</p>
+                    )}
                   </div>
                 </div>
               )}

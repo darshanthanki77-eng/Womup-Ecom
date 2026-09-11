@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AboutSection from "../../components/AboutSection";
 import AuthModal from "../../components/common/AuthModal";
-import PortalSwitcher from "../../components/common/PortalSwitcher";
 import ContactSection from "../../components/ContactSection";
 import DashboardView from "../../components/DashboardView";
 import DocsSection from "../../components/DocsSection";
@@ -28,7 +27,7 @@ import {
     roadmapData,
     tokenData,
     tokenomicsData
-} from "../../data/mockData";
+} from "../../data/protocolData";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -85,37 +84,24 @@ export default function LandingPage() {
     }
   });
 
-  // Fetch live data from backend API if running
+  // Fetch live data from backend API safely
   useEffect(() => {
-    fetch("/api/packages")
-      .then((r) => r.json())
-      .then((d) => d.success && setPackages(d.data))
-      .catch(() => {});
+    const safeFetch = async (url) => {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      } catch (e) {
+        return null;
+      }
+    };
 
-    fetch("/api/token")
-      .then((r) => r.json())
-      .then((d) => d.success && setTokenInfo(d.data))
-      .catch(() => {});
-
-    fetch("/api/tokenomics")
-      .then((r) => r.json())
-      .then((d) => d.success && setTokenomics(d.data))
-      .catch(() => {});
-
-    fetch("/api/roadmap")
-      .then((r) => r.json())
-      .then((d) => d.success && setRoadmap(d.data))
-      .catch(() => {});
-
-    fetch("/api/faq")
-      .then((r) => r.json())
-      .then((d) => d.success && setFaqList(d.data))
-      .catch(() => {});
-
-    fetch("/api/docs")
-      .then((r) => r.json())
-      .then((d) => d.success && setDocsList(d.data))
-      .catch(() => {});
+    safeFetch("/api/packages").then((d) => d?.success && setPackages(d.data));
+    safeFetch("/api/token").then((d) => d?.success && setTokenInfo(d.data));
+    safeFetch("/api/tokenomics").then((d) => d?.success && setTokenomics(d.data));
+    safeFetch("/api/roadmap").then((d) => d?.success && setRoadmap(d.data));
+    safeFetch("/api/faq").then((d) => d?.success && setFaqList(d.data));
+    safeFetch("/api/docs").then((d) => d?.success && setDocsList(d.data));
   }, []);
 
   // Handle package selection (Silver, Gold, Black)
@@ -149,9 +135,6 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg-deep-black)" }}>
-      {/* Floating Quick Switcher */}
-      <PortalSwitcher />
-
       {/* Sticky Global Navigation */}
       <Navbar
         currentView={currentView}
@@ -165,13 +148,7 @@ export default function LandingPage() {
         wallet={wallet}
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
         onOpenInvestModal={handleGeneralInvestClick}
-        onOpenAuthModal={(mode) => {
-          if (mode === "login") {
-            navigate("/login?redirect=/investment");
-          } else {
-            handleOpenAuth(mode);
-          }
-        }}
+        onOpenAuthModal={(mode) => handleOpenAuth(mode || "signup")}
       />
 
       {/* Main Content Area */}

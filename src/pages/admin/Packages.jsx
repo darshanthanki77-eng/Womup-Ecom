@@ -1,23 +1,36 @@
 import { AlertCircle, CheckCircle2, Crown, Edit3, Plus, ShieldCheck, X } from "lucide-react";
 import React, { useState } from "react";
 import StatusPill from "../../components/common/StatusPill";
-import { initialPackagesConfig } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminPackages() {
-  const [packages, setPackages] = useState(initialPackagesConfig);
+  const [packages, setPackages] = useState([]);
   const [editingPkg, setEditingPkg] = useState(null);
   const [notification, setNotification] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleSaveEdit = (e) => {
+  React.useEffect(() => {
+    api.packages.getAll().then((res) => {
+      if (res.success && res.data) setPackages(res.data);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    setPackages(packages.map((p) => (p.id === editingPkg.id ? editingPkg : p)));
+    const res = await api.packages.update(editingPkg.packageId || editingPkg.id, editingPkg);
+    if (res.success) {
+      setPackages(packages.map((p) => ((p.packageId || p.id) === (editingPkg.packageId || editingPkg.id) ? editingPkg : p)));
+      setNotification(`Package "${editingPkg.name}" configuration updated & logged in Audit Ledger!`);
+    } else {
+      setNotification(res.error || "Update failed.");
+    }
     setEditingPkg(null);
-    setNotification(`Package "${editingPkg.name}" configuration updated & logged in Audit Ledger!`);
     setTimeout(() => setNotification(""), 4000);
   };
 
   const toggleStatus = (id) => {
-    setPackages(packages.map((p) => (p.id === id ? { ...p, status: p.status === "Active" ? "Inactive" : "Active" } : p)));
+    setPackages(packages.map((p) => ((p.packageId || p.id) === id ? { ...p, status: p.status === "Active" ? "Inactive" : "Active" } : p)));
   };
 
   return (

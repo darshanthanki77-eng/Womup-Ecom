@@ -18,11 +18,31 @@ import {
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import MetricCard from "../../components/common/MetricCard";
-import { initialAdminStats } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const stats = initialAdminStats;
+  const [stats, setStats] = React.useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalInvestments: 0,
+    activeInvestments: 0,
+    totalInvested: 0,
+    roiAccrued: 0,
+    referralCommissions: 0,
+    pendingWithdrawals: 0,
+    completedWithdrawals: 0,
+    principalReturned: 0,
+    packageDistribution: { silver: 0, gold: 0, black: 0 }
+  });
+
+  React.useEffect(() => {
+    api.admin.getDashboard().then((res) => {
+      if (res.success && res.stats) {
+        setStats(res.stats);
+      }
+    });
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -68,14 +88,16 @@ export default function AdminDashboard() {
 
       {/* Analytics Charts Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "24px" }}>
-        {/* User & Capital Growth Chart */}
+        {/* Capital Growth Chart */}
         <div className="regal-card" style={{ padding: "26px", background: "#0E0E0E" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div>
               <h3 style={{ fontSize: "16px", color: "#FFF" }}>Capital Growth (USDT TVL)</h3>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Trailing 6 months growth</span>
+              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Cumulative invested capital</span>
             </div>
-            <span style={{ fontSize: "13px", fontWeight: 700, color: "#22C55E" }}>+142.8%</span>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#22C55E" }}>
+              ${stats.totalInvested.toLocaleString()} USDT
+            </span>
           </div>
 
           <div style={{ height: "160px", width: "100%" }}>
@@ -84,50 +106,57 @@ export default function AdminDashboard() {
               <path d="M 0 130 Q 80 120 160 90 T 320 50 T 500 15" fill="none" stroke="#D4AF37" strokeWidth="3" />
             </svg>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-muted)" }}>
-              <span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span>
+              <span>M-6</span><span>M-5</span><span>M-4</span><span>M-3</span><span>M-2</span><span>Now</span>
             </div>
           </div>
         </div>
 
         {/* Tier Distribution Breakdown */}
-        <div className="regal-card" style={{ padding: "26px", background: "#0E0E0E" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "16px", color: "#FFF" }}>Investment Package Distribution</h3>
-            <span style={{ fontSize: "12px", color: "var(--gold-bright)", fontWeight: 700 }}>2,190 Total</span>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                <span style={{ color: "#FFF" }}>Regal Gold ($1,000–$2,999.99)</span>
-                <strong style={{ color: "var(--gold-bright)" }}>58% (1,270)</strong>
+        {(() => {
+          const dist = stats.packageDistribution || { silver: 0, gold: 0, black: 0 };
+          const total = (dist.silver || 0) + (dist.gold || 0) + (dist.black || 0) || stats.totalInvestments || 1;
+          const goldPct = Math.round(((dist.gold || 0) / total) * 100);
+          const blackPct = Math.round(((dist.black || 0) / total) * 100);
+          const silverPct = 100 - goldPct - blackPct;
+          return (
+            <div className="regal-card" style={{ padding: "26px", background: "#0E0E0E" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", color: "#FFF" }}>Investment Package Distribution</h3>
+                <span style={{ fontSize: "12px", color: "var(--gold-bright)", fontWeight: 700 }}>{total.toLocaleString()} Total</span>
               </div>
-              <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
-                <div style={{ width: "58%", height: "100%", background: "var(--gold-gradient)" }} />
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                    <span style={{ color: "#FFF" }}>Regal Gold ($1,000–$2,999.99)</span>
+                    <strong style={{ color: "var(--gold-bright)" }}>{goldPct}% ({dist.gold || 0})</strong>
+                  </div>
+                  <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${goldPct}%`, height: "100%", background: "var(--gold-gradient)" }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                    <span style={{ color: "#FFF" }}>Regal Black ($3,000+)</span>
+                    <strong style={{ color: "#FFF" }}>{blackPct}% ({dist.black || 0})</strong>
+                  </div>
+                  <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${blackPct}%`, height: "100%", background: "#F5F5F5" }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                    <span style={{ color: "#FFF" }}>Regal Silver ($100–$999.99)</span>
+                    <strong style={{ color: "var(--text-muted)" }}>{silverPct}% ({dist.silver || 0})</strong>
+                  </div>
+                  <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${silverPct}%`, height: "100%", background: "#666" }} />
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                <span style={{ color: "#FFF" }}>Regal Black ($3,000+)</span>
-                <strong style={{ color: "#FFF" }}>27% (591)</strong>
-              </div>
-              <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
-                <div style={{ width: "27%", height: "100%", background: "#F5F5F5" }} />
-              </div>
-            </div>
-
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                <span style={{ color: "#FFF" }}>Regal Silver ($100–$999.99)</span>
-                <strong style={{ color: "var(--text-muted)" }}>15% (329)</strong>
-              </div>
-              <div style={{ width: "100%", height: "8px", background: "#1C1C1C", borderRadius: "4px", overflow: "hidden" }}>
-                <div style={{ width: "15%", height: "100%", background: "#666" }} />
-              </div>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );

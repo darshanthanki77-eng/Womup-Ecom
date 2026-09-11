@@ -4,26 +4,43 @@ import { useNavigate } from "react-router-dom";
 import RegalTable from "../../components/common/RegalTable";
 import ScrollableTabs from "../../components/common/ScrollableTabs";
 import StatusPill from "../../components/common/StatusPill";
-import { initialAllUsers } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState(initialAllUsers);
+  const [users, setUsers] = useState([]);
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const handleUpdateStatus = (id, newStatus) => {
-    setUsers(users.map((u) => (u.id === id ? { ...u, status: newStatus } : u)));
+  const fetchUsers = () => {
+    api.admin.getUsers("", statusFilter).then((res) => {
+      if (res.success && res.data) {
+        setUsers(res.data);
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    fetchUsers();
+  }, [statusFilter]);
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    await api.admin.updateUserStatus(id, newStatus);
+    setUsers(users.map((u) => ((u.userId === id || u.id === id) ? { ...u, status: newStatus } : u)));
   };
 
   const filtered = statusFilter === "All"
     ? users
-    : users.filter((u) => u.status.toLowerCase() === statusFilter.toLowerCase());
+    : users.filter((u) => u.status?.toLowerCase() === statusFilter.toLowerCase());
 
   const columns = [
     {
       header: "User ID",
       accessor: "id",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>{row.id}</span>
+      render: (row) => (
+        <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>
+          {row.userId || row.id}
+        </span>
+      )
     },
     {
       header: "Name & Email",

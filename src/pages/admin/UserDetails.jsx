@@ -19,28 +19,53 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MetricCard from "../../components/common/MetricCard";
 import StatusPill from "../../components/common/StatusPill";
-import {
-    initialAllUsers,
-    initialInvestments,
-    initialReferrals,
-    initialRoiLedger,
-    initialTransactions,
-    initialWithdrawals
-} from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminUserDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
-  const targetUser = initialAllUsers.find((u) => u.id === id) || initialAllUsers[0];
+  const [targetUser, setTargetUser] = useState({
+    id: id || "USR-001",
+    userId: id || "USR-001",
+    name: "Alexander Vance",
+    wallet: "0x82A4...7B91",
+    walletAddress: "0x82a4f19c8d3e4b7c8d9e0f1a2b3c4d5e7b91",
+    email: "alexander@regal.io",
+    referralCode: "RGL7821",
+    investments: 5000,
+    totalRoi: 325,
+    referralEarnings: 150,
+    status: "Active",
+    joined: "2026-06-15"
+  });
+
+  const [investments, setInvestments] = useState([]);
+  const [referrals, setReferrals] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
+
+  React.useEffect(() => {
+    if (id) {
+      api.admin.getUserDetails(id).then((res) => {
+        if (res.success && res.data) {
+          if (res.data.user) setTargetUser(res.data.user);
+          if (res.data.investments) setInvestments(res.data.investments);
+          if (res.data.referrals) setReferrals(res.data.referrals);
+          if (res.data.transactions) setTransactions(res.data.transactions);
+          if (res.data.withdrawals) setWithdrawals(res.data.withdrawals);
+        }
+      });
+    }
+  }, [id]);
 
   const tabs = [
     { id: "overview", label: "Overview" },
-    { id: "investments", label: "Investments (2)" },
+    { id: "investments", label: `Investments (${investments.length})` },
     { id: "roi", label: "ROI Ledger" },
-    { id: "referrals", label: "Referrals (3)" },
-    { id: "withdrawals", label: "Withdrawals (2)" },
+    { id: "referrals", label: `Referrals (${referrals.length})` },
+    { id: "withdrawals", label: `Withdrawals (${withdrawals.length})` },
     { id: "transactions", label: "Transactions" },
     { id: "audit", label: "Security Audit" }
   ];
@@ -137,15 +162,19 @@ export default function AdminUserDetails() {
         <div className="regal-card" style={{ padding: "24px", background: "#0E0E0E" }}>
           <h3 style={{ fontSize: "16px", color: "#FFF", marginBottom: "16px" }}>User Contracts</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {initialInvestments.map((inv) => (
-              <div key={inv.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", background: "#070707", borderRadius: "8px", border: "1px solid var(--border-standard)" }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: "#FFF" }}>{inv.packageName} — ${inv.amount.toLocaleString()} USDT</div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>ID: {inv.id} • Day {inv.cycleDay} / 240</div>
+            {investments.length > 0 ? (
+              investments.map((inv) => (
+                <div key={inv.investmentId || inv.id || inv._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", background: "#070707", borderRadius: "8px", border: "1px solid var(--border-standard)" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#FFF" }}>{inv.packageName} — ${Number(inv.amount).toLocaleString()} USDT</div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>ID: {inv.investmentId || inv.id} • Day {inv.cycleDay || 1} / 240</div>
+                  </div>
+                  <StatusPill status={inv.status} />
                 </div>
-                <StatusPill status={inv.status} />
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>No investment contracts found.</div>
+            )}
           </div>
         </div>
       )}
@@ -155,13 +184,17 @@ export default function AdminUserDetails() {
         <div className="regal-card" style={{ padding: "24px", background: "#0E0E0E" }}>
           <h3 style={{ fontSize: "16px", color: "#FFF", marginBottom: "16px" }}>Daily ROI Ledger Records</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {initialRoiLedger.map((r) => (
-              <div key={r.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#070707", borderRadius: "6px" }}>
-                <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>{r.date} • {r.investmentId}</span>
-                <span style={{ color: "#22C55E", fontWeight: 700 }}>+${r.amount.toFixed(2)} ({r.rate})</span>
-                <StatusPill status={r.status} />
-              </div>
-            ))}
+            {investments.length > 0 ? (
+              investments.map((r) => (
+                <div key={r.investmentId || r.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#070707", borderRadius: "6px" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>{r.currentPhase} • {r.investmentId || r.id}</span>
+                  <span style={{ color: "#22C55E", fontWeight: 700 }}>+${Number(r.todayRoi || 0).toFixed(2)} ({r.currentRoiRate})</span>
+                  <StatusPill status={r.status} />
+                </div>
+              ))
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>No ROI records.</div>
+            )}
           </div>
         </div>
       )}
@@ -171,18 +204,22 @@ export default function AdminUserDetails() {
         <div className="regal-card" style={{ padding: "24px", background: "#0E0E0E" }}>
           <h3 style={{ fontSize: "16px", color: "#FFF", marginBottom: "16px" }}>Referees & Downline</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {initialReferrals.map((ref) => (
-              <div key={ref.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px", background: "#070707", borderRadius: "8px" }}>
-                <div>
-                  <div style={{ color: "#FFF", fontWeight: 600 }}>{ref.user} ({ref.package})</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: "11px", fontFamily: "monospace" }}>{ref.wallet}</div>
+            {referrals.length > 0 ? (
+              referrals.map((ref) => (
+                <div key={ref.referralId || ref.id || ref._id} style={{ display: "flex", justifyContent: "space-between", padding: "12px", background: "#070707", borderRadius: "8px" }}>
+                  <div>
+                    <div style={{ color: "#FFF", fontWeight: 600 }}>{ref.referredUser || ref.user} ({ref.packageName || ref.package})</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "11px", fontFamily: "monospace" }}>{ref.referredWallet || ref.wallet}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ color: "var(--gold-bright)", fontWeight: 700 }}>+${Number(ref.commission).toFixed(2)}</div>
+                    <StatusPill status={ref.status} />
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "var(--gold-bright)", fontWeight: 700 }}>+${ref.commission.toFixed(2)}</div>
-                  <StatusPill status={ref.status} />
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>No downline referees.</div>
+            )}
           </div>
         </div>
       )}
@@ -192,15 +229,19 @@ export default function AdminUserDetails() {
         <div className="regal-card" style={{ padding: "24px", background: "#0E0E0E" }}>
           <h3 style={{ fontSize: "16px", color: "#FFF", marginBottom: "16px" }}>User Withdrawal Requests</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {initialWithdrawals.map((w) => (
-              <div key={w.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px", background: "#070707", borderRadius: "8px" }}>
-                <div>
-                  <div style={{ color: "#FFF", fontWeight: 600 }}>{w.id} — ${w.amount.toFixed(2)} USDT</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>{w.date} • Destination: {w.destination}</div>
+            {withdrawals.length > 0 ? (
+              withdrawals.map((w) => (
+                <div key={w.withdrawalId || w.id || w._id} style={{ display: "flex", justifyContent: "space-between", padding: "12px", background: "#070707", borderRadius: "8px" }}>
+                  <div>
+                    <div style={{ color: "#FFF", fontWeight: 600 }}>{w.withdrawalId || w.id} — ${Number(w.amount).toFixed(2)} USDT</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>{w.date} • Destination: {w.destination}</div>
+                  </div>
+                  <StatusPill status={w.status} />
                 </div>
-                <StatusPill status={w.status} />
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>No withdrawal requests found.</div>
+            )}
           </div>
         </div>
       )}
@@ -210,13 +251,17 @@ export default function AdminUserDetails() {
         <div className="regal-card" style={{ padding: "24px", background: "#0E0E0E" }}>
           <h3 style={{ fontSize: "16px", color: "#FFF", marginBottom: "16px" }}>Account Financial Ledger</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {initialTransactions.map((tx) => (
-              <div key={tx.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#070707", borderRadius: "6px" }}>
-                <span style={{ color: "#FFF" }}>{tx.type} ({tx.date})</span>
-                <span style={{ color: tx.amount.startsWith("+") ? "#22C55E" : "#EF4444", fontWeight: 700 }}>{tx.amount}</span>
-                <StatusPill status={tx.status} />
-              </div>
-            ))}
+            {transactions.length > 0 ? (
+              transactions.map((tx) => (
+                <div key={tx.transactionId || tx.id || tx._id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#070707", borderRadius: "6px" }}>
+                  <span style={{ color: "#FFF" }}>{tx.type} ({tx.date})</span>
+                  <span style={{ color: String(tx.amount).startsWith("+") ? "#22C55E" : "#EF4444", fontWeight: 700 }}>{tx.amount}</span>
+                  <StatusPill status={tx.status} />
+                </div>
+              ))
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>No transactions logged.</div>
+            )}
           </div>
         </div>
       )}

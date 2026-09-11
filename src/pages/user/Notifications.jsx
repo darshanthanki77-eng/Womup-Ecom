@@ -1,13 +1,26 @@
 import { Bell, Check, CheckCheck, Clock, Coins, Layers, Radio, Shield, Users } from "lucide-react";
 import React, { useState } from "react";
 import ScrollableTabs from "../../components/common/ScrollableTabs";
-import { initialNotifications } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserNotifications() {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("All");
 
-  const markAllRead = () => {
+  const fetchNotifs = () => {
+    api.notifications.getMy().then((res) => {
+      if (res.success && res.data) {
+        setNotifications(res.data);
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    fetchNotifs();
+  }, []);
+
+  const markAllRead = async () => {
+    await api.notifications.markAllRead();
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
@@ -15,7 +28,7 @@ export default function UserNotifications() {
     ? notifications
     : filter === "Unread"
     ? notifications.filter((n) => !n.read)
-    : notifications.filter((n) => n.type.toLowerCase().includes(filter.toLowerCase()));
+    : notifications.filter((n) => n.type?.toLowerCase().includes(filter.toLowerCase()));
 
   const getIcon = (type) => {
     switch (type) {

@@ -2,12 +2,20 @@ import { Activity, Download, Eye, FileSpreadsheet, Filter, Lock, ShieldCheck, X 
 import React, { useState } from "react";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialAuditLogs } from "../../data/portalData";
+import { api } from "../../services/api";
 import { exportToCsv } from "../../utils/exportCsv";
 
 export default function AdminAuditLogs() {
-  const [logs] = useState(initialAuditLogs);
+  const [logs, setLogs] = useState([]);
   const [inspectLog, setInspectLog] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    api.admin.getAuditLogs().then((res) => {
+      if (res.success && res.data) setLogs(res.data);
+      setLoading(false);
+    });
+  }, []);
 
   const columns = [
     {
@@ -72,6 +80,7 @@ export default function AdminAuditLogs() {
       </div>
 
       {/* Audit Table */}
+      {loading && <div style={{ color: "var(--text-muted)", fontSize: "14px", padding: "10px 0" }}>Loading audit logs...</div>}
       <RegalTable
         columns={columns}
         data={logs}

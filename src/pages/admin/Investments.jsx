@@ -1,16 +1,24 @@
-import { CheckCircle2, Crown, ExternalLink, Eye, Filter, Flag, Layers, ShieldAlert, X } from "lucide-react";
+import { CheckCircle2, Crown, ExternalLink, Eye, Flag, Layers, ShieldAlert, X } from "lucide-react";
 import React, { useState } from "react";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialInvestments } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminInvestments() {
-  const [investments, setInvestments] = useState(initialInvestments);
+  const [investments, setInvestments] = useState([]);
   const [inspectInv, setInspectInv] = useState(null);
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleUpdateStatus = (id, newStatus) => {
-    setInvestments(investments.map((inv) => (inv.id === id ? { ...inv, status: newStatus } : inv)));
+  React.useEffect(() => {
+    api.investments.getAll().then((res) => {
+      if (res.success && res.data) setInvestments(res.data);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    setInvestments(investments.map((inv) => (inv.id === id || inv.investmentId === id ? { ...inv, status: newStatus } : inv)));
     setInspectInv(null);
     setMsg(`Contract ${id} status updated to ${newStatus}.`);
     setTimeout(() => setMsg(""), 4000);
@@ -19,8 +27,8 @@ export default function AdminInvestments() {
   const columns = [
     {
       header: "Investment ID",
-      accessor: "id",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>{row.id}</span>
+      accessor: "investmentId",
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)", fontWeight: 700 }}>{row.investmentId || row.id}</span>
     },
     {
       header: "Package",
@@ -30,7 +38,7 @@ export default function AdminInvestments() {
     {
       header: "Capital Amount",
       accessor: "amount",
-      render: (row) => <span style={{ color: "var(--gold-primary)", fontWeight: 700 }}>${row.amount.toLocaleString()} USDT</span>
+      render: (row) => <span style={{ color: "var(--gold-primary)", fontWeight: 700 }}>${Number(row.amount || 0).toLocaleString()} USDT</span>
     },
     {
       header: "Start Date",
@@ -45,14 +53,14 @@ export default function AdminInvestments() {
     {
       header: "Cycle Day",
       accessor: "cycleDay",
-      render: (row) => <span>Day {row.cycleDay} / 240</span>
+      render: (row) => <span>Day {row.cycleDay || 0} / 240</span>
     },
     {
       header: "TX Hash",
       accessor: "txHash",
       render: (row) => (
         <span style={{ fontFamily: "monospace", color: "var(--text-muted)", fontSize: "12px" }}>
-          {row.txHash.slice(0, 10)}...
+          {row.txHash ? row.txHash.slice(0, 10) + "..." : "—"}
         </span>
       )
     },
@@ -92,6 +100,10 @@ export default function AdminInvestments() {
         </div>
       )}
 
+      {loading && (
+        <div style={{ color: "var(--text-muted)", fontSize: "14px", padding: "20px 0" }}>Loading investments...</div>
+      )}
+
       {/* Table */}
       <RegalTable
         columns={columns}
@@ -104,7 +116,7 @@ export default function AdminInvestments() {
         <div className="modal-overlay" onClick={() => setInspectInv(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "540px" }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: "18px" }}>Audit Contract {inspectInv.id}</h3>
+              <h3 style={{ fontSize: "18px" }}>Audit Contract {inspectInv.investmentId || inspectInv.id}</h3>
               <button onClick={() => setInspectInv(null)} style={{ background: "none", border: "none", color: "var(--text-muted)" }}>
                 <X size={20} />
               </button>
@@ -113,28 +125,32 @@ export default function AdminInvestments() {
               <div style={{ background: "#060606", padding: "14px", borderRadius: "8px", border: "1px solid var(--border-standard)" }}>
                 <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>ON-CHAIN TRANSACTION HASH</div>
                 <div style={{ fontFamily: "monospace", color: "var(--gold-bright)", wordBreak: "break-all", marginTop: "4px" }}>
-                  {inspectInv.txHash}
+                  {inspectInv.txHash || "—"}
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>BNB Chain Block:</span>
-                <span style={{ color: "#FFF", fontFamily: "monospace" }}>#{inspectInv.blockNumber}</span>
+                <span style={{ color: "#FFF", fontFamily: "monospace" }}>#{inspectInv.blockNumber || "—"}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>Capital Deployed:</span>
-                <span style={{ color: "var(--gold-primary)", fontWeight: 700 }}>${inspectInv.amount.toLocaleString()} USDT</span>
+                <span style={{ color: "var(--gold-primary)", fontWeight: 700 }}>${Number(inspectInv.amount || 0).toLocaleString()} USDT</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-muted)" }}>Current Yield Rate:</span>
-                <span style={{ color: "#22C55E", fontWeight: 700 }}>{inspectInv.currentRoiRate} Daily</span>
+                <span style={{ color: "#22C55E", fontWeight: 700 }}>{inspectInv.currentRoiRate || "—"} Daily</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)" }}>User Wallet:</span>
+                <span style={{ fontFamily: "monospace", color: "#FFF", fontSize: "12px" }}>{inspectInv.userWallet || inspectInv.wallet || "—"}</span>
               </div>
             </div>
             <div className="modal-footer">
               <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={() => handleUpdateStatus(inspectInv.id, "Flagged")} className="btn btn-outline btn-sm" style={{ color: "#EF4444" }}>
+                <button onClick={() => handleUpdateStatus(inspectInv.investmentId || inspectInv.id, "Flagged")} className="btn btn-outline btn-sm" style={{ color: "#EF4444" }}>
                   Flag Contract
                 </button>
-                <button onClick={() => handleUpdateStatus(inspectInv.id, "Active")} className="btn btn-gold btn-sm">
+                <button onClick={() => handleUpdateStatus(inspectInv.investmentId || inspectInv.id, "ACTIVE")} className="btn btn-gold btn-sm">
                   Verify & Keep Active
                 </button>
               </div>

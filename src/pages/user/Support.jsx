@@ -1,35 +1,47 @@
 import { CheckCircle2, HelpCircle, MessageCircle, MessageSquare, PlusCircle, Send, ShieldCheck, X } from "lucide-react";
 import React, { useState } from "react";
 import StatusPill from "../../components/common/StatusPill";
-import { initialTickets } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function UserSupport() {
-  const [tickets, setTickets] = useState(initialTickets);
+  const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newSubject, setNewSubject] = useState("");
   const [newCategory, setNewCategory] = useState("Investment");
   const [newMessage, setNewMessage] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleCreateTicket = (e) => {
-    e.preventDefault();
-    const createdTicket = {
-      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-      category: newCategory,
-      subject: newSubject,
-      created: new Date().toISOString().slice(0, 10),
-      lastUpdate: "Just now",
-      status: "OPEN",
-      messages: [
-        { sender: "User", text: newMessage, time: new Date().toISOString().replace("T", " ").slice(0, 16) }
-      ]
-    };
+  const fetchTickets = () => {
+    api.support.getMyTickets().then((res) => {
+      if (res.success && res.data) {
+        setTickets(res.data);
+      }
+    });
+  };
 
-    setTickets([createdTicket, ...tickets]);
-    setNewSubject("");
-    setNewMessage("");
-    setSuccess(`Ticket ${createdTicket.id} submitted! A dedicated concierge specialist will respond shortly.`);
-    setTimeout(() => setSuccess(""), 5000);
+  React.useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const handleCreateTicket = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.support.createTicket({
+        category: newCategory,
+        subject: newSubject,
+        message: newMessage
+      });
+
+      if (res.success && res.data) {
+        setTickets([res.data, ...tickets]);
+        setNewSubject("");
+        setNewMessage("");
+        setSuccess(`Ticket ${res.data.ticketId} submitted! A dedicated concierge specialist will respond shortly.`);
+        setTimeout(() => setSuccess(""), 5000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

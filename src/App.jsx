@@ -56,6 +56,7 @@ export default function App() {
           <Route path="/investment" element={<UserInvestment />} />
           <Route path="/investments" element={<UserInvestments />} />
           <Route path="/roi-history" element={<UserROIHistory />} />
+          <Route path="/roi" element={<UserROIHistory />} />
           <Route path="/referrals" element={<UserReferrals />} />
           <Route path="/wallet" element={<UserWallet />} />
           <Route path="/withdraw" element={<UserWithdraw />} />

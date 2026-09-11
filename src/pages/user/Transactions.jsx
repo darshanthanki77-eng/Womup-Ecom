@@ -3,16 +3,24 @@ import React, { useState } from "react";
 import RegalTable from "../../components/common/RegalTable";
 import ScrollableTabs from "../../components/common/ScrollableTabs";
 import StatusPill from "../../components/common/StatusPill";
-import { initialTransactions } from "../../data/portalData";
+import { api } from "../../services/api";
 import { exportToCsv } from "../../utils/exportCsv";
 
 export default function UserTransactions() {
-  const [transactions] = useState(initialTransactions);
+  const [transactions, setTransactions] = useState([]);
   const [typeFilter, setTypeFilter] = useState("All");
+
+  React.useEffect(() => {
+    api.transactions.getMy().then((res) => {
+      if (res.success && res.data) {
+        setTransactions(res.data);
+      }
+    });
+  }, []);
 
   const filtered = typeFilter === "All"
     ? transactions
-    : transactions.filter((t) => t.type.toLowerCase().includes(typeFilter.toLowerCase()));
+    : transactions.filter((t) => t.type?.toLowerCase().includes(typeFilter.toLowerCase()));
 
   const columns = [
     {

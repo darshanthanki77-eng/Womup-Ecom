@@ -1,60 +1,93 @@
-import { Calendar, Download, FileSpreadsheet, FileText, Filter, TrendingUp } from "lucide-react";
-import React, { useState } from "react";
-import {
-    initialAllUsers,
-    initialInvestments,
-    initialReferrals,
-    initialRoiLedger,
-    initialTransactions,
-    initialWithdrawals
-} from "../../data/portalData";
+import { Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { api } from "../../services/api";
 import { exportToCsv } from "../../utils/exportCsv";
 
 export default function AdminReports() {
   const [dateRange, setDateRange] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  const [dataSources, setDataSources] = useState({
+    users: [],
+    investments: [],
+    roi: [],
+    referrals: [],
+    withdrawals: [],
+    transactions: []
+  });
+
+  useEffect(() => {
+    async function loadAllReports() {
+      setLoading(true);
+      try {
+        const [usersRes, invRes, roiRes, refRes, wthRes, txRes] = await Promise.allSettled([
+          api.admin.getUsers(),
+          api.investments.getAll(),
+          api.roi.getAll(),
+          api.referrals.getAll(),
+          api.withdrawals.getAll(),
+          api.transactions.getAll()
+        ]);
+
+        setDataSources({
+          users: usersRes.status === "fulfilled" && usersRes.value?.success ? usersRes.value.data : [],
+          investments: invRes.status === "fulfilled" && invRes.value?.success ? invRes.value.data : [],
+          roi: roiRes.status === "fulfilled" && roiRes.value?.success ? roiRes.value.data : [],
+          referrals: refRes.status === "fulfilled" && refRes.value?.success ? refRes.value.data : [],
+          withdrawals: wthRes.status === "fulfilled" && wthRes.value?.success ? wthRes.value.data : [],
+          transactions: txRes.status === "fulfilled" && txRes.value?.success ? txRes.value.data : []
+        });
+      } catch (err) {
+        console.error("Failed to fetch reports:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAllReports();
+  }, []);
 
   const reports = [
     {
       title: "User Directory & KYC Report",
-      desc: "Complete roster of 1,428 Web3 users with wallet addresses, sponsors, and verification states.",
-      rows: initialAllUsers.length,
+      desc: "Complete roster of registered Web3 users with wallet addresses, sponsors, and verification states.",
+      rows: dataSources.users.length,
       filename: "regal-users-report",
-      data: initialAllUsers
+      data: dataSources.users
     },
     {
       title: "Investment Portfolio & Yield Report",
       desc: "All capital deployments across Silver, Gold, and Black tiers with cycle milestones.",
-      rows: initialInvestments.length,
+      rows: dataSources.investments.length,
       filename: "regal-investments-report",
-      data: initialInvestments
+      data: dataSources.investments
     },
     {
       title: "Daily ROI Settlement Ledger",
       desc: "Detailed day-by-day calculations, rates (0.15% & 0.25%), and distribution proofs.",
-      rows: initialRoiLedger.length,
+      rows: dataSources.roi.length,
       filename: "regal-roi-ledger-report",
-      data: initialRoiLedger
+      data: dataSources.roi
     },
     {
       title: "Affiliate & Referral Network Report",
       desc: "Multi-tier commission payouts, qualifying investments, and referee mapping.",
-      rows: initialReferrals.length,
+      rows: dataSources.referrals.length,
       filename: "regal-referral-network-report",
-      data: initialReferrals
+      data: dataSources.referrals
     },
     {
       title: "Withdrawal Queue & Disbursement Report",
       desc: "On-chain settlements, destination addresses, deducted protocol fees, and completion statuses.",
-      rows: initialWithdrawals.length,
+      rows: dataSources.withdrawals.length,
       filename: "regal-withdrawals-report",
-      data: initialWithdrawals
+      data: dataSources.withdrawals
     },
     {
       title: "Complete Blockchain Transaction Ledger",
       desc: "Global financial audit records with BSC transaction hashes and block confirmations.",
-      rows: initialTransactions.length,
+      rows: dataSources.transactions.length,
       filename: "regal-blockchain-transactions-report",
-      data: initialTransactions
+      data: dataSources.transactions
     }
   ];
 
@@ -88,6 +121,11 @@ export default function AdminReports() {
           <option value="90d">Last Quarter (Q3 2026)</option>
           <option value="year">Year to Date (2026)</option>
         </select>
+        {loading && (
+          <span style={{ fontSize: "12px", color: "var(--gold-bright)", display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
+            <Loader2 size={14} className="spin" /> Fetching live datasets from database...
+          </span>
+        )}
       </div>
 
       {/* Reports Grid */}
@@ -111,7 +149,7 @@ export default function AdminReports() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "16px", color: "#FFF" }}>{r.title}</h3>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{r.rows} Sample Records Indexed</span>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{r.rows} Live Records Indexed</span>
                 </div>
               </div>
               <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.6", marginBottom: "20px" }}>
@@ -121,10 +159,11 @@ export default function AdminReports() {
 
             <button
               onClick={() => exportToCsv(r.data, r.filename)}
+              disabled={r.rows === 0}
               className="btn btn-outline-gold btn-sm"
-              style={{ width: "100%" }}
+              style={{ width: "100%", opacity: r.rows === 0 ? 0.5 : 1 }}
             >
-              <Download size={14} /> Download CSV Export
+              <Download size={14} /> Download CSV Export ({r.rows})
             </button>
           </div>
         ))}

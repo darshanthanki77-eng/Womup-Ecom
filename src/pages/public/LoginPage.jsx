@@ -16,7 +16,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { coinHero } from "../../assets";
-import { initialUser } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function LoginPage() {
   const location = useLocation();
@@ -35,6 +35,8 @@ export default function LoginPage() {
 
   // Signup fields
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [sponsorRef, setSponsorRef] = useState(initialRef);
   const [signupPassword, setSignupPassword] = useState("");
@@ -54,89 +56,90 @@ export default function LoginPage() {
     } catch (e) {}
   }, [navigate, redirectTarget, selectedPackage]);
 
-  // Handle Login
-  const handleLoginSubmit = (e) => {
+  // Handle Login via Backend API
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const id = loginId.trim();
     if (!id) {
-      setErrorMsg("Please enter your Referral ID (e.g. RGL...) or Wallet Address.");
+      setErrorMsg("Please enter your Referral ID (e.g. RGL...), Phone Number, Email, or Wallet Address.");
       return;
     }
 
-    let userToLoad = initialUser;
-    const existing = localStorage.getItem("regal_user");
-    if (existing) {
-      try {
-        const parsed = JSON.parse(existing);
-        if (
-          parsed.referralCode?.toLowerCase() === id.toLowerCase() ||
-          parsed.walletAddress?.toLowerCase() === id.toLowerCase()
-        ) {
-          userToLoad = parsed;
-        } else if (id.toUpperCase().startsWith("RGL")) {
-          userToLoad = { ...parsed, referralCode: id.toUpperCase() };
-        }
-      } catch (err) {}
-    } else if (id.toUpperCase().startsWith("RGL")) {
-      userToLoad = { ...initialUser, referralCode: id.toUpperCase() };
+    try {
+      const res = await api.auth.login(id, password);
+      if (res.success && res.data) {
+        if (res.token) localStorage.setItem("regal_token", res.token);
+        localStorage.setItem("regal_user", JSON.stringify(res.data));
+
+        const dest = selectedPackage
+          ? `${redirectTarget}?package=${encodeURIComponent(selectedPackage)}`
+          : redirectTarget;
+        navigate(dest, { state: { selectedPackage } });
+      } else {
+        setErrorMsg(res.error || "Login failed. Please check your credentials or register an account first.");
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Network error logging in.");
     }
-
-    localStorage.setItem("regal_user", JSON.stringify(userToLoad));
-    const dest = selectedPackage
-      ? `${redirectTarget}?package=${encodeURIComponent(selectedPackage)}`
-      : redirectTarget;
-    navigate(dest, { state: { selectedPackage } });
   };
 
-  // One-click quick demo login
-  const handleDemoLogin = () => {
-    localStorage.setItem("regal_user", JSON.stringify(initialUser));
-    const dest = selectedPackage
-      ? `${redirectTarget}?package=${encodeURIComponent(selectedPackage)}`
-      : redirectTarget;
-    navigate(dest, { state: { selectedPackage } });
+  // One-click quick demo login via Backend API
+  const handleDemoLogin = async () => {
+    try {
+      const res = await api.auth.demoLogin();
+      if (res.success && res.data) {
+        if (res.token) localStorage.setItem("regal_token", res.token);
+        localStorage.setItem("regal_user", JSON.stringify(res.data));
+
+        const dest = selectedPackage
+          ? `${redirectTarget}?package=${encodeURIComponent(selectedPackage)}`
+          : redirectTarget;
+        navigate(dest, { state: { selectedPackage } });
+      }
+    } catch (err) {
+      setErrorMsg("Demo login failed.");
+    }
   };
 
-  // Handle Sign Up
-  const handleSignupSubmit = (e) => {
+  // Handle Sign Up via Backend API
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     if (!fullName.trim()) {
       setErrorMsg("Please enter your full name.");
       return;
     }
+    if (!sponsorRef.trim()) {
+      setErrorMsg("Sponsor Referral Code is mandatory. Please enter your sponsor's Referral ID.");
+      return;
+    }
 
-    const autoWallet = walletAddress.trim() || `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
-    const generatedReferralId = `RGL${Math.floor(1000 + Math.random() * 9000)}`;
+    try {
+      const res = await api.auth.register({
+        name: fullName.trim(),
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        walletAddress: walletAddress.trim(),
+        sponsorRef: sponsorRef.trim().toUpperCase(),
+        password: signupPassword
+      });
 
-    const newUser = {
-      ...initialUser,
-      name: fullName.trim(),
-      walletAddress: autoWallet,
-      shortAddress: `${autoWallet.slice(0, 6)}...${autoWallet.slice(-4)}`,
-      referralCode: generatedReferralId,
-      sponsorId: sponsorRef.trim().toUpperCase() || "RGL9901",
-      registeredDate: new Date().toISOString().split("T")[0],
-      status: "Active",
-      stats: {
-        activeInvested: 0,
-        totalRoi: 0,
-        pendingRoi: 0,
-        paidRoi: 0,
-        referralEarnings: 0,
-        availableBalance: 0,
-        principalReturn: 0
+      if (res.success && res.data) {
+        if (res.token) localStorage.setItem("regal_token", res.token);
+        localStorage.setItem("regal_user", JSON.stringify(res.data));
+        setCreatedUser(res.data);
+
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#D4AF37", "#F4D77A", "#FFFFFF", "#22C55E"]
+        });
+      } else {
+        setErrorMsg(res.error || "Registration failed.");
       }
-    };
-
-    localStorage.setItem("regal_user", JSON.stringify(newUser));
-    setCreatedUser(newUser);
-
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#D4AF37", "#F4D77A", "#FFFFFF", "#22C55E"]
-    });
+    } catch (err) {
+      setErrorMsg(err.message || "Error creating account.");
+    }
   };
 
   const handleProceedToInvestment = () => {
@@ -486,7 +489,31 @@ export default function LoginPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     autoFocus
+                    required
                   />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+                  <div>
+                    <label className="regal-label">Email Address</label>
+                    <input
+                      type="email"
+                      className="regal-input"
+                      placeholder="e.g. alex@regal.io"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="regal-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      className="regal-input"
+                      placeholder="e.g. +919988776655"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: "14px" }}>
@@ -504,15 +531,19 @@ export default function LoginPage() {
 
                 <div style={{ marginBottom: "14px" }}>
                   <label className="regal-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Sparkles size={13} color="var(--gold-primary)" /> Sponsor / Referral Code (Optional)
+                    <Sparkles size={13} color="var(--gold-primary)" /> Sponsor / Referral Code <span style={{ color: "#EF4444" }}>*</span> (Mandatory)
                   </label>
                   <input
                     type="text"
                     className="regal-input"
-                    placeholder="RGL..."
+                    placeholder="Enter Sponsor Referral ID (e.g. RGL...)"
                     value={sponsorRef}
                     onChange={(e) => setSponsorRef(e.target.value.toUpperCase())}
+                    required
                   />
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
+                    Mandatory invite code. Enter the Referral ID of the member who referred you.
+                  </span>
                 </div>
 
                 <div style={{ marginBottom: "22px" }}>

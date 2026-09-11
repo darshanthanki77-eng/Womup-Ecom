@@ -3,38 +3,76 @@ import React, { useState } from "react";
 import MetricCard from "../../components/common/MetricCard";
 import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
-import { initialRoiLedger } from "../../data/portalData";
+import { api } from "../../services/api";
 
 export default function AdminROIManagement() {
-  const [ledger] = useState(initialRoiLedger);
+  const [ledger, setLedger] = useState([]);
+  const [stats, setStats] = useState({
+    contractsProcessed: 0,
+    dailyVolume: 0,
+    successRate: "—",
+    bufferSkipped: 0
+  });
   const [running, setRunning] = useState(false);
   const [runLog, setRunLog] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleTriggerDailyRun = () => {
+  React.useEffect(() => {
+    api.roi.getAll().then((res) => {
+      if (res.success && res.data) {
+        setLedger(res.data);
+        // Compute live stats
+        const total = res.data.length;
+        const dailyVolume = res.data.reduce((sum, r) => sum + (Number(r.accruedAmount || r.amount) || 0), 0);
+        const bufferSkipped = res.data.filter((r) => r.phase === "Buffer" || r.status === "SKIPPED").length;
+        setStats({
+          contractsProcessed: total,
+          dailyVolume: dailyVolume,
+          successRate: total > 0 ? `${Math.round(((total - bufferSkipped) / total) * 100)}%` : "—",
+          bufferSkipped
+        });
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const handleTriggerDailyRun = async () => {
     setRunning(true);
-    setTimeout(() => {
-      setRunning(false);
+    const res = await api.roi.triggerRun();
+    setRunning(false);
+    if (res.success) {
       setRunLog({
         timestamp: new Date().toISOString(),
-        contractsProcessed: 1640,
-        totalCreditedUsdt: "7,275.00",
-        failures: 0,
-        skippedBuffer: 320,
+        contractsProcessed: res.contractsProcessed || 0,
+        totalCreditedUsdt: res.totalCredited ? Number(res.totalCredited).toFixed(2) : "0.00",
+        failures: res.failures || 0,
+        skippedBuffer: res.skippedBuffer || 0,
         precision: "Fixed 18 Decimals (Deterministic)"
       });
-    }, 1800);
+      // Reload ledger
+      api.roi.getAll().then((r) => { if (r.success && r.data) setLedger(r.data); });
+    } else {
+      setRunLog({
+        timestamp: new Date().toISOString(),
+        contractsProcessed: 0,
+        totalCreditedUsdt: "0.00",
+        failures: 1,
+        skippedBuffer: 0,
+        precision: res.error || "Run failed"
+      });
+    }
   };
 
   const columns = [
     {
       header: "Record ID",
-      accessor: "id",
-      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.id}</span>
+      accessor: "roiId",
+      render: (row) => <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{row.roiId || row.id}</span>
     },
     {
       header: "Date",
-      accessor: "date",
-      render: (row) => <span>{row.date}</span>
+      accessor: "businessDate",
+      render: (row) => <span>{row.businessDate || row.date}</span>
     },
     {
       header: "Contract ID",
@@ -53,8 +91,8 @@ export default function AdminROIManagement() {
     },
     {
       header: "Amount Credited",
-      accessor: "amount",
-      render: (row) => <span style={{ color: "#22C55E", fontWeight: 700 }}>+${row.amount.toFixed(2)} USDT</span>
+      accessor: "accruedAmount",
+      render: (row) => <span style={{ color: "#22C55E", fontWeight: 700 }}>+${Number(row.accruedAmount || row.amount || 0).toFixed(2)} USDT</span>
     },
     {
       header: "Status",
@@ -91,10 +129,10 @@ export default function AdminROIManagement() {
 
       {/* 4 Summary Metric Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-        <MetricCard title="Contracts Processed" value="1,640" subtitle="Active yielding contracts" icon={<TrendingUp size={18} color="var(--gold-primary)" />} />
-        <MetricCard title="Daily Run Volume" value="$7,275.00" subtitle="Estimated daily liability" icon={<Clock size={18} color="var(--gold-bright)" />} />
-        <MetricCard title="Successful Accruals" value="100%" subtitle="0 calculation conflicts" icon={<CheckCircle2 size={18} color="#22C55E" />} />
-        <MetricCard title="Buffer Skipped" value="320" subtitle="Contracts in Day 1–60" icon={<ShieldCheck size={18} color="#666" />} />
+        <MetricCard title="Contracts Processed" value={stats.contractsProcessed.toLocaleString()} subtitle="Active yielding contracts" icon={<TrendingUp size={18} color="var(--gold-primary)" />} />
+        <MetricCard title="Daily Run Volume" value={`$${stats.dailyVolume.toFixed(2)}`} subtitle="Estimated daily liability" icon={<Clock size={18} color="var(--gold-bright)" />} />
+        <MetricCard title="Success Rate" value={stats.successRate} subtitle="0 calculation conflicts" icon={<CheckCircle2 size={18} color="#22C55E" />} />
+        <MetricCard title="Buffer Skipped" value={stats.bufferSkipped.toLocaleString()} subtitle="Contracts in Day 1–60" icon={<ShieldCheck size={18} color="#666" />} />
       </div>
 
       {/* Real-time Calculation Run Log */}
@@ -111,6 +149,10 @@ export default function AdminROIManagement() {
             <div>[INTEGRITY] Precision: {runLog.precision}. Duplicate accrual check passed.</div>
           </div>
         </div>
+      )}
+
+      {loading && (
+        <div style={{ color: "var(--text-muted)", fontSize: "14px", padding: "10px 0" }}>Loading ROI ledger...</div>
       )}
 
       {/* Engine Ledger Table */}

@@ -4,22 +4,39 @@ import MetricCard from "../../components/common/MetricCard";
 import RegalTable from "../../components/common/RegalTable";
 import ScrollableTabs from "../../components/common/ScrollableTabs";
 import StatusPill from "../../components/common/StatusPill";
-import { initialRoiLedger } from "../../data/portalData";
+import { api } from "../../services/api";
 import { exportToCsv } from "../../utils/exportCsv";
 
 export default function UserROIHistory() {
-  const [ledger] = useState(initialRoiLedger);
+  const [ledger, setLedger] = useState([]);
   const [selectedPhase, setSelectedPhase] = useState("All");
+
+  React.useEffect(() => {
+    api.roi.getMyHistory().then((res) => {
+      if (res.success && res.data) {
+        setLedger(res.data);
+      }
+    });
+  }, []);
+
+  const totalRoi = ledger.reduce((s, r) => s + Number(r.accruedAmount ?? r.amount ?? 0), 0);
+  const pendingRoi = ledger
+    .filter((r) => r.status === "PENDING" || r.status === "Pending" || r.status === "Accrued" || r.status === "ACCRUED")
+    .reduce((s, r) => s + Number(r.accruedAmount ?? r.amount ?? 0), 0);
+  const paidRoi = ledger
+    .filter((r) => r.status === "PAID" || r.status === "Paid" || r.status === "SETTLED")
+    .reduce((s, r) => s + Number(r.accruedAmount ?? r.amount ?? 0), 0);
+  const activeRate = ledger.length > 0 ? (ledger[0]?.rate || ledger[0]?.appliedRate || "0.15%") : "0.15%";
 
   const filtered = selectedPhase === "All"
     ? ledger
-    : ledger.filter((item) => item.phase.includes(selectedPhase));
+    : ledger.filter((item) => item.phase?.includes(selectedPhase));
 
   const columns = [
     {
       header: "Date",
       accessor: "date",
-      render: (row) => <span style={{ color: "#FFF", fontWeight: 600 }}>{row.date}</span>
+      render: (row) => <span style={{ color: "#FFF", fontWeight: 600 }}>{row.businessDate || row.date}</span>
     },
     {
       header: "Investment ID",
@@ -45,7 +62,7 @@ export default function UserROIHistory() {
       accessor: "amount",
       render: (row) => (
         <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, color: "#22C55E" }}>
-          +${row.amount.toFixed(2)} USDT
+          +${Number(row.accruedAmount ?? row.amount ?? 0).toFixed(2)} USDT
         </span>
       )
     },
@@ -81,26 +98,26 @@ export default function UserROIHistory() {
       <div className="dashboard-kpi-grid metric-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
         <MetricCard
           title="Total ROI"
-          value="$325.00"
+          value={`$${totalRoi.toFixed(2)}`}
           subtitle="Cumulative earnings"
           icon={<TrendingUp size={18} color="var(--gold-primary)" />}
         />
         <MetricCard
           title="Pending Settlement"
-          value="$125.00"
+          value={`$${pendingRoi.toFixed(2)}`}
           subtitle="Internal ledger accruals"
           icon={<Clock size={18} color="#F59E0B" />}
         />
         <MetricCard
           title="Paid ROI"
-          value="$200.00"
+          value={`$${paidRoi.toFixed(2)}`}
           subtitle="Settled to user wallet"
           icon={<CheckCircle2 size={18} color="#22C55E" />}
         />
         <MetricCard
           title="Current Active Rate"
-          value="0.15% Daily"
-          subtitle="Simple yield (Month 3–5)"
+          value={`${activeRate} Daily`}
+          subtitle="Simple yield"
           icon={<Sparkles size={18} color="var(--gold-bright)" />}
         />
       </div>

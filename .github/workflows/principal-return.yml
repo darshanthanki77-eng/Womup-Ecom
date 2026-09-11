@@ -1,0 +1,21 @@
+name: Principal Return Engine
+
+on:
+  schedule:
+    # Runs daily at 01:00 UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-maturity:
+    name: Check Contract Maturities & Principal Eligibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Maturity Verification
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_API_URL || 'http://localhost:5001' }}
+          ADMIN_KEY: ${{ secrets.ADMIN_SECRET_KEY || 'regal-super-admin-secret-2026' }}
+        run: |
+          curl -s "$BACKEND_URL/api/v1/investments/all" \
+            -H "x-admin-key: $ADMIN_KEY" || echo "Maturity check finished."

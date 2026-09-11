@@ -16,29 +16,48 @@ import {
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import StatusPill from "../../components/common/StatusPill";
-import { initialPackagesConfig } from "../../data/portalData";
+import { api } from "../../services/api";
+
+const defaultPackages = [
+  { id: "regal-silver", packageId: "regal-silver", name: "Regal Silver", minAmount: 100, maxAmount: 999.99, referralPercent: 1.5, phase1Rate: "0.15%", phase2Rate: "0.25%" },
+  { id: "regal-gold", packageId: "regal-gold", name: "Regal Gold", minAmount: 1000, maxAmount: 2999.99, referralPercent: 3.0, phase1Rate: "0.15%", phase2Rate: "0.25%" },
+  { id: "regal-black", packageId: "regal-black", name: "Regal Black", minAmount: 3000, maxAmount: 1000000, referralPercent: 5.0, phase1Rate: "0.15%", phase2Rate: "0.25%" }
+];
 
 export default function UserInvestment() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useOutletContext();
-  const [packages] = useState(initialPackagesConfig);
-  const [selectedPkg, setSelectedPkg] = useState(packages[1] || packages[0]);
-  const [amount, setAmount] = useState(selectedPkg.minAmount.toString());
+  const [packages, setPackages] = useState(defaultPackages);
+  const [selectedPkg, setSelectedPkg] = useState(defaultPackages[1]);
+  const [amount, setAmount] = useState(defaultPackages[1].minAmount.toString());
   const [status, setStatus] = useState("idle"); // idle | broadcasting | pending_verification | confirmed
   const [confirmedData, setConfirmedData] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [hoveredPkg, setHoveredPkg] = useState(null);
 
+  // Fetch live package boundaries from backend
+  useEffect(() => {
+    api.packages.getAll().then((res) => {
+      if (res.success && res.data && res.data.length > 0) {
+        setPackages(res.data);
+        const initial = res.data[1] || res.data[0];
+        setSelectedPkg(initial);
+        setAmount(initial.minAmount.toString());
+      }
+    });
+  }, []);
+
   // Pre-select package if passed via URL or state (e.g. from landing page)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const targetName = params.get("package") || location.state?.selectedPackage;
-    if (targetName) {
+    if (targetName && packages.length > 0) {
       const match = packages.find(
         (p) =>
           p.name.toLowerCase() === targetName.toLowerCase() ||
-          p.id.toLowerCase() === targetName.toLowerCase() ||
+          p.id?.toLowerCase() === targetName.toLowerCase() ||
+          p.packageId?.toLowerCase() === targetName.toLowerCase() ||
           p.name.toLowerCase().includes(targetName.toLowerCase())
       );
       if (match) {
@@ -54,28 +73,40 @@ export default function UserInvestment() {
     setErrorMsg("");
   };
 
-  const handleStartInvestment = () => {
+  const handleStartInvestment = async () => {
     const val = parseFloat(amount);
-    if (isNaN(val) || val < selectedPkg.minAmount || (selectedPkg.maxAmount < 100000 && val > selectedPkg.maxAmount)) {
+    if (isNaN(val) || val < selectedPkg.minAmount || (selectedPkg.maxAmount < 1000000 && val > selectedPkg.maxAmount)) {
       setErrorMsg(`Amount must be between $${selectedPkg.minAmount.toLocaleString()} and $${selectedPkg.maxAmount.toLocaleString()} USDT.`);
       return;
     }
     setErrorMsg("");
     setStatus("broadcasting");
 
-    setTimeout(() => {
-      setStatus("pending_verification");
-      // Simulate backend blockchain receipt verification
-      setTimeout(() => {
+    try {
+      setTimeout(() => setStatus("pending_verification"), 1000);
+
+      const res = await api.investments.submit({
+        packageId: selectedPkg.packageId || selectedPkg.id,
+        amount: val,
+        walletAddress: user?.walletAddress
+      });
+
+      if (res.success && res.data) {
         setStatus("confirmed");
         setConfirmedData({
-          invId: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-          txHash: "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join(""),
-          blockNumber: 38945000 + Math.floor(Math.random() * 1000),
-          timestamp: new Date().toISOString().replace("T", " ").slice(0, 19)
+          invId: res.data.investmentId,
+          txHash: res.data.txHash,
+          blockNumber: res.data.blockNumber,
+          timestamp: new Date(res.data.startDate || Date.now()).toISOString().replace("T", " ").slice(0, 19)
         });
-      }, 2500);
-    }, 1500);
+      } else {
+        setStatus("idle");
+        setErrorMsg(res.error || "Investment verification failed.");
+      }
+    } catch (err) {
+      setStatus("idle");
+      setErrorMsg(err.message || "Failed to submit investment.");
+    }
   };
 
   const numAmount = parseFloat(amount) || selectedPkg.minAmount;
