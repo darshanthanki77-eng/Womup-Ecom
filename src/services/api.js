@@ -21,6 +21,7 @@ const getAuthHeaders = () => {
   return headers;
 };
 
+const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 const DIRECT_BACKEND = "http://127.0.0.1:5001/api/v1";
 
 async function doFetch(targetUrl, config) {
@@ -28,8 +29,6 @@ async function doFetch(targetUrl, config) {
   const text = await res.text();
   let data = {};
   try {
-
-
     data = text ? JSON.parse(text) : {};
   } catch (e) {
     data = { error: text || `HTTP ${res.status}` };
@@ -51,8 +50,8 @@ async function request(endpoint, options = {}) {
   try {
     let { res, data } = await doFetch(proxyUrl, config);
 
-    // If Vite proxy returned 502/504 Bad Gateway, immediately retry via direct backend URL
-    if (res.status === 502 || res.status === 504 || res.status === 503) {
+    // If local dev returned 502/504 Bad Gateway, retry via direct backend URL
+    if (isLocal && (res.status === 502 || res.status === 504 || res.status === 503)) {
       try {
         const direct = await doFetch(directUrl, config);
         if (direct.res.status !== 502 && direct.res.status !== 504) {
@@ -69,18 +68,24 @@ async function request(endpoint, options = {}) {
     }
     return data;
   } catch (err) {
-    // If proxy threw network error, attempt direct backend connection
-    try {
-      const direct = await doFetch(directUrl, config);
-      if (direct.res.ok) return direct.data;
-      return { success: false, error: direct.data.error || direct.data.message || `Server error (${direct.res.status})` };
-    } catch (directErr) {
-      console.warn(`[API Error: ${endpoint}]`, err.message);
-      return {
-        success: false,
-        error: "Cannot connect to backend server on port 5001. Please make sure 'npm run server' is running."
-      };
+    if (isLocal) {
+      try {
+        const direct = await doFetch(directUrl, config);
+        if (direct.res.ok) return direct.data;
+        return { success: false, error: direct.data.error || direct.data.message || `Server error (${direct.res.status})` };
+      } catch (directErr) {
+        console.warn(`[API Error: ${endpoint}]`, err.message);
+        return {
+          success: false,
+          error: "Cannot connect to backend server on port 5001. Please make sure 'npm run server' is running."
+        };
+      }
     }
+    console.warn(`[API Error: ${endpoint}]`, err.message);
+    return {
+      success: false,
+      error: "Unable to communicate with the server. Please check your network and try again."
+    };
   }
 }
 

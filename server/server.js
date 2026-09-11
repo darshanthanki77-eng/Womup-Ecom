@@ -35,6 +35,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ensure Database is connected (crucial for Vercel serverless functions)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("[MongoDB Serverless] Connection failed:", err.message);
+    res.status(500).json({ success: false, error: "Database connection failed" });
+  }
+});
+
 // RESTful API V1 Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/packages", packageRoutes);
@@ -49,6 +60,21 @@ app.use("/api/v1/support", supportRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/blockchain", blockchainRoutes);
 app.use("/api/v1/cms", cmsRoutes);
+
+// Vercel serverless prefix fallback (/v1/...)
+app.use("/v1/auth", authRoutes);
+app.use("/v1/packages", packageRoutes);
+app.use("/v1/investments", investmentRoutes);
+app.use("/v1/roi", roiRoutes);
+app.use("/v1/referrals", referralRoutes);
+app.use("/v1/withdrawals", withdrawalRoutes);
+app.use("/v1/transactions", transactionRoutes);
+app.use("/v1/wallet", walletRoutes);
+app.use("/v1/notifications", notificationRoutes);
+app.use("/v1/support", supportRoutes);
+app.use("/v1/admin", adminRoutes);
+app.use("/v1/blockchain", blockchainRoutes);
+app.use("/v1/cms", cmsRoutes);
 
 // Backward Compatibility Routes for Landing Page & UI prototype (Vite /api proxy)
 app.use("/api/auth", authRoutes);
@@ -125,6 +151,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start standalone listener when not running in Vercel serverless environment
+if (!process.env.VERCEL) {
+  startServer();
+}
 
 export default app;
