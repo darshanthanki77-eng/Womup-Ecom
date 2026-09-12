@@ -1,41 +1,19 @@
 import {
-    ArrowRightLeft,
-    Check,
     Coins,
     Copy,
-    ExternalLink,
-    Flame,
-    Key,
-    Lock,
-    Search,
-    Send,
-    Shield,
-    ShieldAlert,
-    UserCheck,
-    Wallet
+    ExternalLink
 } from "lucide-react";
 import React, { useState } from "react";
 import { coinHero } from "../assets";
 
 export default function TokenSection({ tokenInfo }) {
   const [copied, setCopied] = useState(false);
-  const contractAddress = tokenInfo?.contractAddress || "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+  const contractAddress = tokenInfo?.contractAddress || "0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(contractAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const functionIcons = {
-    "Transfer": <Send size={18} color="var(--gold-primary)" />,
-    "Transfer From": <ArrowRightLeft size={18} color="var(--gold-primary)" />,
-    "Approve": <Check size={18} color="var(--gold-primary)" />,
-    "Allowance": <Search size={18} color="var(--gold-primary)" />,
-    "Balance Of": <Wallet size={18} color="var(--gold-primary)" />,
-    "Burn": <Flame size={18} color="#EF4444" />,
-    "Ownership Transfer": <Key size={18} color="var(--gold-primary)" />,
-    "Admin Control": <ShieldAlert size={18} color="var(--gold-primary)" />
   };
 
   return (
@@ -62,8 +40,7 @@ export default function TokenSection({ tokenInfo }) {
           style={{
             background: "linear-gradient(135deg, #101010 0%, #0A0A0A 100%)",
             border: "1px solid var(--border-highlight)",
-            padding: "36px",
-            marginBottom: "50px"
+            padding: "36px"
           }}
         >
           <div
@@ -174,70 +151,6 @@ export default function TokenSection({ tokenInfo }) {
                 View on BscScan <ExternalLink size={13} />
               </a>
             </div>
-          </div>
-        </div>
-
-        {/* 8 Token Functions Grid */}
-        <div>
-          <h3 style={{ fontSize: "22px", color: "#FFF", marginBottom: "24px", textAlign: "center" }}>
-            Token <span className="gold-text">Functions & Architecture</span>
-          </h3>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "18px"
-            }}
-          >
-            {tokenInfo?.functions && tokenInfo.functions.map((fn) => (
-              <div
-                key={fn.name}
-                className="regal-card"
-                style={{
-                  background: "#0C0C0C",
-                  padding: "22px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between"
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "8px",
-                        background: "rgba(212, 175, 55, 0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-                      {functionIcons[fn.name] || <Shield size={18} color="var(--gold-primary)" />}
-                    </div>
-                    <h4 style={{ fontSize: "16px", color: "#F5F5F5" }}>{fn.name}</h4>
-                  </div>
-                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
-                    {fn.description}
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "16px",
-                    paddingTop: "12px",
-                    borderTop: "1px solid #1A1A1A",
-                    fontSize: "11px",
-                    fontFamily: "monospace",
-                    color: "var(--text-muted)"
-                  }}
-                >
-                  params: {fn.params}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 

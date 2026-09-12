@@ -211,7 +211,9 @@ export const api = {
 
   // Blockchain
   blockchain: {
-    getStatus: () => request("/blockchain/status")
+    getStatus: () => request("/blockchain/status"),
+    getContractState: () => request("/blockchain/contract-state"),
+    verifyTx: (payload) => request("/blockchain/verify-tx", { method: "POST", body: JSON.stringify(payload) })
   },
 
   // CMS

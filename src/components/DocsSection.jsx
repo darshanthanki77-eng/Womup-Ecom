@@ -98,7 +98,7 @@ export default function DocsSection({ docsList }) {
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12.5px" }}>
                 <a
-                  href="https://bscscan.com/token/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+                  href="https://bscscan.com/token/0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5"
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: "var(--text-secondary)", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}

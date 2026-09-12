@@ -12,28 +12,66 @@ import {
     Send,
     TrendingUp,
     Users,
-    Wallet
+    Wallet,
+    Coins as CoinsIcon,
+    RefreshCw
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import MetricCard from "../../components/common/MetricCard";
 import RoiTimeline from "../../components/common/RoiTimeline";
 import StatusPill from "../../components/common/StatusPill";
+import { useWallet } from "../../context/WalletContext";
 import { api } from "../../services/api";
+import web3Service from "../../services/web3Service";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
   const { user } = useOutletContext();
+  const wallet = useWallet();
   const [chartFilter, setChartFilter] = useState("30d");
   const [investments, setInvestments] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [onChainBalances, setOnChainBalances] = useState({
+    rgl: "0.00",
+    usdt: "0.00",
+    bnb: "0.0000"
+  });
+  const [loadingBalances, setLoadingBalances] = useState(false);
 
-  React.useEffect(() => {
+  // Silent on-chain balance query (read-only, zero MetaMask popups)
+  const fetchOnChainBalances = async (targetAddr) => {
+    const addr = targetAddr || wallet.account;
+    if (!addr) {
+      setOnChainBalances({ rgl: "0.00", usdt: "0.00", bnb: "0.0000" });
+      return;
+    }
+    setLoadingBalances(true);
+    try {
+      const [rgl, usdt, bnb] = await Promise.all([
+        web3Service.getRGLBalance(addr),
+        web3Service.getUSDTBalance(addr),
+        web3Service.getNativeBalance(addr)
+      ]);
+      setOnChainBalances({ rgl, usdt, bnb });
+    } catch (e) {
+      console.warn("[Dashboard] Silent balance fetch error:", e);
+    } finally {
+      setLoadingBalances(false);
+    }
+  };
+
+  useEffect(() => {
     api.investments.getMy().then((r) => r.success && r.data && setInvestments(r.data));
     api.referrals.getMy().then((r) => r.success && r.data && setReferrals(r.data));
     api.transactions.getMy().then((r) => r.success && r.data && setTransactions(r.data));
-  }, []);
+    if (wallet.account) {
+      fetchOnChainBalances(wallet.account);
+    } else {
+      setOnChainBalances({ rgl: "0.00", usdt: "0.00", bnb: "0.0000" });
+    }
+  }, [wallet.account]);
 
   const currentInv = investments[0] || null;
 
@@ -56,14 +94,32 @@ export default function UserDashboard() {
           <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#F5F5F5", marginTop: "2px" }}>
             Welcome back, <span className="gold-gradient-text">{user.name}</span>
           </h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", fontSize: "13px", color: "var(--text-secondary)" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 8px #22C55E" }} />
-              BNB Smart Chain (Mainnet 56)
-            </span>
-            <span>•</span>
-            <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>{user.shortAddress}</span>
-          </div>
+          {wallet.isConnected && wallet.account ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", fontSize: "13px", color: "var(--text-secondary)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: wallet.isCorrectChain ? "#22C55E" : "#EF4444", boxShadow: `0 0 8px ${wallet.isCorrectChain ? "#22C55E" : "#EF4444"}` }} />
+                {wallet.isCorrectChain ? "BNB Smart Chain (Mainnet 56)" : `Wrong Chain (${wallet.chainId})`}
+              </span>
+              <span>•</span>
+              <span style={{ fontFamily: "monospace", color: "var(--gold-bright)" }}>
+                {`${wallet.account.slice(0, 6)}...${wallet.account.slice(-4)}`}
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", fontSize: "13px", color: "var(--text-secondary)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EAB308", boxShadow: "0 0 8px rgba(234,179,8,0.4)" }} />
+                Wallet Not Connected
+              </span>
+              <span>•</span>
+              <button
+                onClick={() => wallet.connect()}
+                style={{ background: "none", border: "none", color: "var(--gold-bright)", textDecoration: "underline", cursor: "pointer", fontSize: "12px", padding: 0, fontWeight: 600 }}
+              >
+                Connect MetaMask
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Quick Action Buttons */}
@@ -77,6 +133,55 @@ export default function UserDashboard() {
           <button onClick={() => navigate("/referrals")} className="btn btn-outline-gold btn-sm">
             <Users size={15} /> Invite Friends
           </button>
+        </div>
+      </div>
+
+      {/* Live Web3 On-Chain Token Balances Bar (Read-Only via BSC RPC & RegalToken.balanceOf) */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "14px",
+          background: "rgba(10, 10, 10, 0.7)",
+          border: "1px solid rgba(212, 175, 55, 0.2)",
+          borderRadius: "12px",
+          padding: "16px 20px"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(212,175,55,0.12)", border: "1px solid var(--gold-primary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CoinsIcon size={18} color="var(--gold-bright)" />
+          </div>
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>RGL On-Chain Balance</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--gold-bright)", fontFamily: "monospace" }}>
+              {onChainBalances.rgl} RGL
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(34,197,94,0.12)", border: "1px solid #22C55E", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Wallet size={18} color="#22C55E" />
+          </div>
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>USDT Available</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "#FFF", fontFamily: "monospace" }}>
+              ${onChainBalances.usdt} USDT
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(245,158,11,0.12)", border: "1px solid #F59E0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CoinsIcon size={18} color="#F59E0B" />
+          </div>
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>BNB Gas Reserve</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "#F5F5F5", fontFamily: "monospace" }}>
+              {onChainBalances.bnb} BNB
+            </div>
+          </div>
         </div>
       </div>
 

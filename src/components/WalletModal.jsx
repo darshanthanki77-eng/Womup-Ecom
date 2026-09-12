@@ -31,15 +31,20 @@ export default function WalletModal({ isOpen, onClose, wallet }) {
     }
   ];
 
-  const handleConnect = (providerId) => {
+  const handleConnect = async (providerId) => {
     setConnectingProvider(providerId);
     setErrorMsg("");
 
-    setTimeout(() => {
-      wallet.connect(providerId);
+    try {
+      if (wallet && typeof wallet.connect === "function") {
+        await wallet.connect(providerId);
+      }
       setConnectingProvider(null);
       onClose();
-    }, 900);
+    } catch (err) {
+      setConnectingProvider(null);
+      setErrorMsg(err.message || "Failed to connect wallet provider.");
+    }
   };
 
   return (

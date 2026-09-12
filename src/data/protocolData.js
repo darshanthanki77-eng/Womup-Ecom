@@ -8,8 +8,8 @@ export const tokenData = {
   chainId: 56,
   totalSupply: 100000000,
   formattedSupply: "100,000,000 RGL",
-  contractAddress: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-  explorerUrl: "https://bscscan.com/token/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  contractAddress: "0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5",
+  explorerUrl: "https://bscscan.com/token/0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5",
   cycleDuration: "8 Months",
   decimals: 18,
   functions: [
@@ -327,7 +327,7 @@ Regal (RGL) represents the next evolution in decentralized digital asset managem
     category: "Token",
     content: `### Contract Verification
 The primary RGL token contract is deployed and verified on BscScan.
-- **Contract Address**: \`0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D\`
+- **Contract Address**: \`0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5\`
 - **Auditor**: CertiK / Hacken Independent Review
 - **Owner Architecture**: Multi-Signature 3/5 Timelock Wallet`
   },

@@ -18,9 +18,11 @@ import {
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { useWallet } from "../../context/WalletContext";
 
 export default function AuthModal({ isOpen, onClose, initialMode = "signup", defaultSponsor = "", redirectTo = "/dashboard" }) {
   const navigate = useNavigate();
+  const wallet = useWallet();
   const [mode, setMode] = useState(initialMode); // "signup" | "login"
   
   // Sign Up Form State
@@ -48,13 +50,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
     }
   }, [initialMode, defaultSponsor]);
 
-  // Generate a random valid-looking BSC address if empty
+  // Sync with real connected MetaMask account
   useEffect(() => {
-    if (isOpen && !walletAddress) {
-      const randomHex = "0x" + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-      setWalletAddress(randomHex);
+    if (isOpen && wallet?.account) {
+      setWalletAddress(wallet.account);
     }
-  }, [isOpen]);
+  }, [isOpen, wallet?.account]);
 
   if (!isOpen) return null;
 
@@ -421,13 +422,37 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
                 </div>
 
                 <div>
-                  <label className="regal-label" style={{ fontSize: "12px", marginBottom: "6px" }}>BEP-20 Wallet Address</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <label className="regal-label" style={{ fontSize: "12px", margin: 0 }}>BEP-20 Wallet Address</label>
+                    {wallet?.isConnected ? (
+                      <span style={{ fontSize: "11px", color: "#22C55E", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E" }}></span> Connected
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => wallet?.connect()}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--gold-bright)",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          padding: 0
+                        }}
+                      >
+                        Auto-fill from MetaMask
+                      </button>
+                    )}
+                  </div>
                   <div style={{ position: "relative" }}>
                     <Wallet size={16} color="var(--gold-primary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
                     <input
                       type="text"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
+                      placeholder="0x... your BSC wallet address"
                       className="regal-input"
                       style={{ paddingLeft: "40px", fontFamily: "monospace", fontSize: "12px" }}
                       required
@@ -457,7 +482,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup", def
                       type="text"
                       value={loginIdentifier}
                       onChange={(e) => setLoginIdentifier(e.target.value)}
-                      placeholder="e.g. RGL7821, +919988776655, or 0x82A4..."
+                      placeholder="e.g. RGL7821, +919988776655, or 0x..."
                       className="regal-input"
                       style={{ paddingLeft: "40px", fontFamily: "monospace", fontWeight: 700 }}
                       required

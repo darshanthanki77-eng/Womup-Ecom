@@ -2,9 +2,11 @@ import { CheckCircle2, Copy, Edit3, Key, Mail, Shield, User, Wallet } from "luci
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import StatusPill from "../../components/common/StatusPill";
+import { useWallet } from "../../context/WalletContext";
 
 export default function UserProfile() {
   const { user, setUser } = useOutletContext();
+  const wallet = useWallet();
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [saved, setSaved] = useState(false);
@@ -121,9 +123,25 @@ export default function UserProfile() {
 
             <div>
               <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>PRIMARY CONNECTED WALLET</div>
-              <div style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--gold-primary)", marginTop: "2px", wordBreak: "break-all" }}>
-                {user.walletAddress}
-              </div>
+              {wallet?.isConnected && wallet?.account ? (
+                <div style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--gold-primary)", marginTop: "2px", wordBreak: "break-all" }}>
+                  {wallet.account}
+                </div>
+              ) : (
+                <div style={{ marginTop: "4px" }}>
+                  <div style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic", marginBottom: "6px" }}>
+                    Wallet Not Connected
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => wallet.connect()}
+                    className="btn btn-outline-gold btn-xs"
+                    style={{ fontSize: "11px", padding: "3px 8px" }}
+                  >
+                    Connect MetaMask
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>

@@ -4,7 +4,7 @@ import { coinHero } from "../assets";
 
 export default function Footer({ onNavigate, onOpenInvestModal }) {
   const [copied, setCopied] = useState(false);
-  const contractAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+  const contractAddress = "0xcc6Ba1e3a452fd0b184204723E49eB30691e53A5";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(contractAddress);
@@ -62,7 +62,7 @@ export default function Footer({ onNavigate, onOpenInvestModal }) {
                   BEP-20 Contract
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--gold-bright)", fontFamily: "monospace" }}>
-                  0x7a25...488D
+                  {contractAddress.slice(0, 6)}...{contractAddress.slice(-4)}
                 </div>
               </div>
               <button

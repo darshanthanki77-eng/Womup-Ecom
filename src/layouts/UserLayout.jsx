@@ -23,15 +23,17 @@ import {
     Wallet,
     X
 } from "lucide-react";
-import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { coinHero } from "../assets";
 import { api } from "../services/api";
+import { useWallet } from "../context/WalletContext";
 
 export default function UserLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const wallet = useWallet();
 
   // Strict Authentication Guard: Only authenticated users can access the dashboard/portal
   const token = localStorage.getItem("regal_token");
@@ -207,22 +209,40 @@ export default function UserLayout() {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "11px", color: "var(--text-secondary)" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 8px #22C55E" }} />
-            <span>BNB Smart Chain (56)</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--gold-bright)", fontWeight: 600 }}>
-              {user.shortAddress}
-            </div>
-            <button
-              onClick={() => navigate("/wallet")}
-              title="View Wallet"
-              style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "2px" }}
-            >
-              <ExternalLink size={13} />
-            </button>
-          </div>
+          {wallet?.isConnected && wallet?.account ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "11px", color: "var(--text-secondary)" }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: wallet.isCorrectChain ? "#22C55E" : "#EF4444", boxShadow: `0 0 8px ${wallet.isCorrectChain ? "#22C55E" : "#EF4444"}` }} />
+                <span>{wallet.isCorrectChain ? "BNB Smart Chain (56)" : `Wrong Chain (${wallet.chainId})`}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <div style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--gold-bright)", fontWeight: 600 }}>
+                  {`${wallet.account.slice(0, 6)}...${wallet.account.slice(-4)}`}
+                </div>
+                <button
+                  onClick={() => navigate("/wallet")}
+                  title="View Wallet"
+                  style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "2px" }}
+                >
+                  <ExternalLink size={13} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontSize: "11px", color: "var(--text-secondary)" }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EAB308", boxShadow: "0 0 8px rgba(234,179,8,0.4)" }} />
+                <span>Wallet Not Connected</span>
+              </div>
+              <button
+                onClick={() => wallet.connect().catch((err) => console.warn("[UserLayout] Connect:", err?.message || err))}
+                className="btn btn-outline-gold btn-xs"
+                style={{ width: "100%", fontSize: "11px", padding: "5px 8px", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+              >
+                <Wallet size={12} /> Connect MetaMask
+              </button>
+            </>
+          )}
 
           {/* Sign Out Action */}
           <button

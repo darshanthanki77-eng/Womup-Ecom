@@ -17,15 +17,24 @@ import RegalTable from "../../components/common/RegalTable";
 import StatusPill from "../../components/common/StatusPill";
 import { api } from "../../services/api";
 
+import { useWallet } from "../../context/WalletContext";
+
 export default function UserWithdraw() {
   const { user, setUser } = useOutletContext();
+  const wallet = useWallet();
   const [withdrawals, setWithdrawals] = useState([]);
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState("USDT");
-  const [destination, setDestination] = useState(user?.walletAddress || "");
+  const [destination, setDestination] = useState(wallet?.account || "");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  useEffect(() => {
+    if (wallet?.account && !destination) {
+      setDestination(wallet.account);
+    }
+  }, [wallet?.account]);
 
   const fetchWithdrawals = () => {
     api.withdrawals.getMy().then((res) => {
@@ -191,11 +200,23 @@ export default function UserWithdraw() {
             </div>
 
             <div>
-              <label className="regal-label">Destination Address (BSC BEP-20)</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <label className="regal-label" style={{ margin: 0 }}>Destination Address (BSC BEP-20)</label>
+                {wallet?.isConnected && wallet?.account && (
+                  <button
+                    type="button"
+                    onClick={() => setDestination(wallet.account)}
+                    style={{ background: "none", border: "none", color: "var(--gold-bright)", cursor: "pointer", fontSize: "11px", textDecoration: "underline", padding: 0 }}
+                  >
+                    Auto-Fill Connected Wallet
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
+                placeholder="0x... your connected BSC wallet address"
                 className="regal-input"
                 style={{ fontFamily: "monospace", fontSize: "13px" }}
                 required

@@ -63,7 +63,7 @@ export default function UserTransactions() {
       accessor: "txHash",
       render: (row) => (
         <a
-          href={`https://bscscan.com`}
+          href={row.txHash && row.txHash.startsWith("0x") ? `https://bscscan.com/tx/${row.txHash}` : `https://bscscan.com`}
           target="_blank"
           rel="noreferrer"
           className="onchain-link"

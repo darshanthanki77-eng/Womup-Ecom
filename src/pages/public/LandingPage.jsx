@@ -18,6 +18,7 @@ import RoiCenterView from "../../components/RoiCenterView";
 import TokenomicsSection from "../../components/TokenomicsSection";
 import TokenSection from "../../components/TokenSection";
 import WalletModal from "../../components/WalletModal";
+import { useWallet } from "../../context/WalletContext";
 
 // Synchronous default fallbacks
 import {
@@ -67,22 +68,19 @@ export default function LandingPage() {
     setIsAuthModalOpen(true);
   };
 
-  // Simulated Web3 Wallet State
-  const [wallet, setWallet] = useState({
-    connected: false,
-    address: "0x82A4F19c8d3e4b7c8d9e0f1a2b3c4d5e7B91",
-    shortAddress: "0x82A4...7B91",
-    network: "BNB Smart Chain (56)",
-    bnbBalance: "2.45",
-    usdtBalance: "8,500.00",
-    rglBalance: "15,000",
-    connect: () => {
-      setWallet((prev) => ({ ...prev, connected: true }));
-    },
-    disconnect: () => {
-      setWallet((prev) => ({ ...prev, connected: false }));
-    }
-  });
+  // Real Web3 Wallet State
+  const realWallet = useWallet();
+  const wallet = {
+    connected: realWallet.isConnected,
+    address: realWallet.account || "",
+    shortAddress: realWallet.account ? `${realWallet.account.slice(0, 6)}...${realWallet.account.slice(-4)}` : "",
+    network: realWallet.isCorrectChain ? "BNB Smart Chain (56)" : `Chain ID: ${realWallet.chainId}`,
+    bnbBalance: realWallet.balances.bnb,
+    usdtBalance: realWallet.balances.usdt,
+    rglBalance: realWallet.balances.rgl,
+    connect: () => realWallet.connect(),
+    disconnect: () => realWallet.disconnect()
+  };
 
   // Fetch live data from backend API safely
   useEffect(() => {
