@@ -348,9 +348,10 @@ export default function PresaleStructure({ onOpenInvestModal }) {
                   overflow: "hidden"
                 }}
               >
-                {/* Card Top: Phase Header & Standalone Large Number (No Overlap) */}
+                {/* Card Top: Phase Header & Large Number with Badge Down Below (01 -> CURRENT PHASE) */}
                 <div style={{ position: "relative", zIndex: 1, marginBottom: "22px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                    {/* Left: Phase Title */}
                     <div>
                       <span
                         style={{
@@ -360,14 +361,33 @@ export default function PresaleStructure({ onOpenInvestModal }) {
                           letterSpacing: "0.15em",
                           color: "var(--gold-bright)",
                           textTransform: "uppercase",
-                          display: "block",
-                          marginBottom: "10px"
+                          display: "inline-block",
+                          marginTop: "6px"
                         }}
                       >
                         PHASE {phase.phaseNumber}
                       </span>
+                    </div>
 
-                      {/* Status text (CURRENT PHASE / UPCOMING / FINAL STAGE) displayed down below, not overlapping number */}
+                    {/* Right: Large Number 01, 02, 03 on top + Badge DOWN after the number */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-heading)",
+                          fontSize: "52px",
+                          fontWeight: 900,
+                          lineHeight: 1,
+                          letterSpacing: "-0.04em",
+                          background: "linear-gradient(135deg, rgba(212, 175, 55, 0.45) 0%, rgba(140, 106, 22, 0.18) 100%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          userSelect: "none"
+                        }}
+                      >
+                        {phase.phaseNumber}
+                      </div>
+
+                      {/* Badge shown DOWN after 01, 02, 03 */}
                       <div>
                         {phase.isLive ? (
                           <span
@@ -382,7 +402,8 @@ export default function PresaleStructure({ onOpenInvestModal }) {
                               color: "#4ADE80",
                               fontSize: "11px",
                               fontWeight: 700,
-                              letterSpacing: "0.05em"
+                              letterSpacing: "0.05em",
+                              whiteSpace: "nowrap"
                             }}
                           >
                             <span
@@ -406,31 +427,14 @@ export default function PresaleStructure({ onOpenInvestModal }) {
                               background: "rgba(255, 255, 255, 0.04)",
                               padding: "4px 10px",
                               borderRadius: "999px",
-                              border: "1px solid rgba(255, 255, 255, 0.08)"
+                              border: "1px solid rgba(255, 255, 255, 0.08)",
+                              whiteSpace: "nowrap"
                             }}
                           >
                             {phase.status}
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    {/* Large Phase Number: Standalone & crisp without any text on top */}
-                    <div
-                      style={{
-                        fontFamily: "var(--font-heading)",
-                        fontSize: "52px",
-                        fontWeight: 900,
-                        lineHeight: 0.9,
-                        letterSpacing: "-0.04em",
-                        background: "linear-gradient(135deg, rgba(212, 175, 55, 0.45) 0%, rgba(140, 106, 22, 0.18) 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        userSelect: "none",
-                        flexShrink: 0
-                      }}
-                    >
-                      {phase.phaseNumber}
                     </div>
                   </div>
 
