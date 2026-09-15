@@ -92,7 +92,7 @@ export default function Footer({ onNavigate, onOpenInvestModal }) {
               Regal Ecosystem
             </h4>
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
-              {["about", "ecosystem", "token", "tokenomics", "roadmap"].map((id) => (
+              {["about", "ecosystem", "token", "tokenomics", "presale", "roadmap"].map((id) => (
                 <li key={id}>
                   <a
                     href={`#${id}`}

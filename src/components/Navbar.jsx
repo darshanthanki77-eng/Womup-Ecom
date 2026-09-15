@@ -32,6 +32,7 @@ export default function Navbar({
     { id: "home", label: "Home" },
     { id: "ecosystem", label: "Ecosystem" },
     { id: "token", label: "Token" },
+    { id: "presale", label: "Presale" },
     { id: "packages", label: "Packages" },
     { id: "how-it-works", label: "How It Works" },
   ];

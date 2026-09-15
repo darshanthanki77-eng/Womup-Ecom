@@ -13,6 +13,7 @@ import HowItWorksSection from "../../components/HowItWorksSection";
 import InvestmentModal from "../../components/InvestmentModal";
 import Navbar from "../../components/Navbar";
 import PackagesSection from "../../components/PackagesSection";
+import PresaleStructure from "../../components/PresaleStructure";
 import RoadmapSection from "../../components/RoadmapSection";
 import RoiCenterView from "../../components/RoiCenterView";
 import TokenomicsSection from "../../components/TokenomicsSection";
@@ -191,6 +192,9 @@ export default function LandingPage() {
 
         {/* Screen 5: Tokenomics */}
         <TokenomicsSection tokenomics={tokenomics} />
+
+        {/* Screen: RGL Presale Structure */}
+        <PresaleStructure onOpenInvestModal={handleGeneralInvestClick} />
 
         {/* Screen 7: Roadmap */}
         <RoadmapSection roadmap={roadmap} />

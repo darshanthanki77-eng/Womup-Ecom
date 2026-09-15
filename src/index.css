@@ -729,3 +729,55 @@ html, body {
   overflow-x: hidden !important;
   max-width: 100vw !important;
 }
+
+/* RGL Presale Structure Component Styling */
+.presale-cards-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .presale-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .presale-phase-arrow {
+    display: none !important;
+  }
+  .presale-total-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+  .presale-calc-grid {
+    grid-template-columns: 1fr !important;
+    gap: 30px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .presale-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .presale-phase-arrow {
+    display: none !important;
+  }
+  .presale-total-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .presale-total-card {
+    padding: 24px 20px !important;
+  }
+  .presale-calc-wrapper {
+    padding: 24px 18px !important;
+  }
+  .presale-timeline-track {
+    display: none !important;
+  }
+  .presale-timeline-row {
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+  .presale-dropdown-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
