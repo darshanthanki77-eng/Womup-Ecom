@@ -27,9 +27,8 @@ export default function EcosystemSection({ onOpenInvestModal }) {
         {/* Ecosystem Infographic Diagram */}
         <div
           style={{
-            maxWidth: "780px",
-            
-            margin: "0 auto 60px",
+            maxWidth: "540px",
+            margin: "0 auto 50px",
             position: "relative",
             textAlign: "center"
           }}
@@ -41,10 +40,10 @@ export default function EcosystemSection({ onOpenInvestModal }) {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "500px",
-              height: "500px",
-              background: "radial-gradient(circle, rgba(212, 175, 55, 0.12) 0%, rgba(5, 5, 5, 0) 70%)",
-              filter: "blur(50px)",
+              width: "380px",
+              height: "380px",
+              background: "radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(5, 5, 5, 0) 70%)",
+              filter: "blur(40px)",
               pointerEvents: "none",
               zIndex: 0
             }}
@@ -55,11 +54,11 @@ export default function EcosystemSection({ onOpenInvestModal }) {
             alt="The Regal Ecosystem Diagram"
             style={{
               width: "100%",
+              maxWidth: "540px",
               height: "auto",
-              borderRadius: "18px",
               position: "relative",
               zIndex: 1,
-              filter: "drop-shadow(0 15px 40px rgba(0,0,0,0.8)) drop-shadow(0 0 30px rgba(212, 175, 55, 0.18))"
+              filter: "drop-shadow(0 12px 30px rgba(0,0,0,0.8)) drop-shadow(0 0 25px rgba(212, 175, 55, 0.2))"
             }}
           />
         </div>
